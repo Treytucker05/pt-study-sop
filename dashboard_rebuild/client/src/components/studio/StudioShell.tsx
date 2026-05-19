@@ -789,6 +789,11 @@ export function StudioShell({
   const popoutHandlesRef = useRef<Record<string, PopoutWindowHandle>>({});
   const [layoutMenuOpen, setLayoutMenuOpen] = useState(false);
   const layoutMenuRef = useRef<HTMLDivElement | null>(null);
+  const layoutMenuPanelRef = useRef<HTMLDivElement | null>(null);
+  const [layoutMenuPos, setLayoutMenuPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const lastExternalLayoutFocusRequestKeyRef = useRef<number | null>(null);
 
   const clampCanvasScale = useCallback((scale: number) => {
@@ -1596,18 +1601,42 @@ export function StudioShell({
     const handlePointerDown = (event: PointerEvent) => {
       const menu = layoutMenuRef.current;
       if (!menu) return;
-      if (event.target instanceof Node && menu.contains(event.target)) return;
+      if (event.target instanceof Node) {
+        // Trigger wrapper OR the portaled menu panel both count as "inside".
+        if (menu.contains(event.target)) return;
+        if (layoutMenuPanelRef.current?.contains(event.target)) return;
+      }
       setLayoutMenuOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setLayoutMenuOpen(false);
     };
 
+    // The menu is portaled to <body> and positioned `fixed` from the
+    // trigger rect so it overlays everything and is never clipped by the
+    // toolbar's overflow-x-auto / the locked shell's overflow-hidden.
+    const place = () => {
+      const rect = layoutMenuRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const MENU_W = 288; // w-72
+      const left = Math.max(
+        8,
+        Math.min(rect.left, window.innerWidth - MENU_W - 8),
+      );
+      setLayoutMenuPos({ top: Math.round(rect.bottom + 8), left: Math.round(left) });
+    };
+    place();
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", place);
+    // capture phase: also catch scrolls on overflow ancestors (toolbar, shell)
+    window.addEventListener("scroll", place, true);
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
     };
   }, [layoutMenuOpen]);
 
@@ -1934,13 +1963,20 @@ export function StudioShell({
                       Layout
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </Button>
-                    {layoutMenuOpen ? (
-                      <div
-                        role="menu"
-                        aria-label="Layout presets"
-                        className="absolute left-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-xl border border-[var(--ds-accent-a22)] bg-black/90 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm"
-                      >
-                        {LAYOUT_PRESETS.map(({ key: preset, label, hint }) => (
+                    {layoutMenuOpen && layoutMenuPos
+                      ? createPortal(
+                          <div
+                            ref={layoutMenuPanelRef}
+                            role="menu"
+                            aria-label="Layout presets"
+                            style={{
+                              position: "fixed",
+                              top: layoutMenuPos.top,
+                              left: layoutMenuPos.left,
+                            }}
+                            className="z-[9999] w-72 overflow-hidden rounded-xl border border-[var(--ds-accent-a22)] bg-black/95 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.55)] backdrop-blur-sm"
+                          >
+                            {LAYOUT_PRESETS.map(({ key: preset, label, hint }) => (
                           <button
                             key={preset}
                             type="button"
@@ -1963,9 +1999,11 @@ export function StudioShell({
                               {hint}
                             </span>
                           </button>
-                        ))}
-                      </div>
-                    ) : null}
+                            ))}
+                          </div>,
+                          document.body,
+                        )
+                      : null}
                   </div>
                 </div>
               </div>
