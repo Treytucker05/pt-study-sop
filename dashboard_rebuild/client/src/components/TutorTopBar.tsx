@@ -88,10 +88,10 @@ const RUNTIME_CARD_BASE =
   "relative overflow-hidden border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,42,76,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
 
 const TUTOR_STRIP =
-  "relative overflow-hidden border border-[rgba(255,68,104,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-3 py-1.5 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
+  "relative border-b border-white/[0.06] bg-zinc-950/40 px-3 py-2";
 
 const TUTOR_META_CHIP =
-  "inline-flex min-h-0 items-center gap-2 border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-2.5 py-1 font-mono text-sm text-foreground/82 backdrop-blur-sm";
+  "inline-flex min-h-0 items-center gap-2 rounded-md bg-white/[0.04] px-2.5 py-1 text-[13px] text-zinc-300";
 
 const TUTOR_SELECT_OPTION_CLASS =
   "bg-[#12070b] text-[var(--ds-fg-pink-6)]";
@@ -301,17 +301,17 @@ export function TutorTopBar({
         <div
           className={cn(TUTOR_STRIP, "flex flex-wrap items-center gap-2.5")}
         >
-          <span className="font-arcade text-ui-xs uppercase tracking-[0.18em] text-white">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             ACTIVE WORKFLOW
           </span>
-          <span className="h-4 w-px bg-primary/18" aria-hidden="true" />
-          <span className="font-mono text-sm uppercase tracking-[0.16em] text-foreground/78">
+          <span className="h-3 w-px bg-white/10" aria-hidden="true" />
+          <span className="text-[12px] font-medium text-zinc-500">
             {surfaceLabel}
           </span>
           {workflowStageLabel ? (
             <Badge
               variant="outline"
-              className="rounded-[var(--ds-r-020)] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-zinc-400"
             >
               STAGE {workflowStageLabel}
             </Badge>
@@ -319,7 +319,7 @@ export function TutorTopBar({
           {workflowStatusLabel ? (
             <Badge
               variant="outline"
-              className="rounded-[var(--ds-r-020)] border-secondary/25 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-zinc-400"
             >
               {workflowStatusLabel}
             </Badge>
@@ -327,14 +327,14 @@ export function TutorTopBar({
           {isTutorSessionView ? (
             <Badge
               variant="outline"
-              className="rounded-[var(--ds-r-020)] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"
+              className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-400"
             >
               LIVE SESSION
             </Badge>
           ) : (
             <Badge
               variant="outline"
-              className="rounded-[var(--ds-r-020)] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/76"
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-zinc-400"
             >
               READY
             </Badge>
@@ -349,7 +349,7 @@ export function TutorTopBar({
               }
               aria-expanded={previousSessionsExpanded}
               aria-controls="tutor-previous-sessions"
-              className={cn(tutorUtilityButton(), "px-3")}
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100"
             >
               {previousSessionsExpanded ? (
                 <ChevronUp className="h-3.5 w-3.5" />

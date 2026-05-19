@@ -1,5 +1,4 @@
 import {
-  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -41,7 +40,6 @@ import {
   type WorkspacePanelSizePresetKey,
 } from "@/components/ui/WorkspacePanel";
 import { Button } from "@/components/ui/button";
-import { CONTROL_DECK, CONTROL_KICKER } from "@/components/shell/controlStyles";
 import type { StudioPanelLayoutItem } from "@/lib/studioPanelLayout";
 import { cn } from "@/lib/utils";
 import { useCanvasLocked, toggleCanvasLocked } from "@/lib/canvasLock";
@@ -1777,141 +1775,54 @@ export function StudioShell({
           >
             <div
               data-testid="studio-toolbar"
-              className={cn(
-                CONTROL_DECK,
-                "flex w-full items-center gap-2 overflow-visible px-3 py-1.5",
-              )}
+              className="flex w-full items-center gap-1 overflow-visible border-b border-white/[0.06] bg-zinc-950/50 px-2.5 py-1.5 backdrop-blur-sm"
             >
             <div
               data-testid="studio-toolbar-pipeline"
               className="flex min-w-0 flex-1 flex-nowrap items-center gap-x-1.5 overflow-x-auto pb-0.5 [scrollbar-width:thin]"
             >
-              {PIPELINE_STAGES.map((stage, stageIndex) => {
-                const stagePanels = STAGE_PANEL_ORDER[stage.key]
+              {[...PIPELINE_STAGES, ...SIDE_CLUSTERS].flatMap((stage) =>
+                STAGE_PANEL_ORDER[stage.key]
                   .map((panelKey) =>
-                    panelDefinitions.find(
-                      (definition) => definition.panel === panelKey,
-                    ),
+                    panelDefinitions.find((d) => d.panel === panelKey),
                   )
                   .filter(
-                    (definition): definition is StudioPanelDefinition =>
-                      Boolean(definition),
-                  );
-                if (stagePanels.length === 0) return null;
-                return (
-                  <Fragment key={stage.key}>
-                    {stageIndex > 0 ? (
-                      <div
-                        aria-hidden="true"
-                        className="flex shrink-0 items-center px-1 font-mono text-base text-primary/70"
+                    (d): d is StudioPanelDefinition => Boolean(d),
+                  )
+                  .map((definition) => {
+                    const open = resolvedLayout.some(
+                      (item) => item.panel === definition.panel,
+                    );
+                    const PanelIcon = definition.icon;
+                    return (
+                      <button
+                        key={`${stage.key}:${definition.panel}`}
+                        type="button"
+                        aria-label={`Open ${definition.title} panel`}
+                        aria-pressed={open}
+                        title={definition.title}
+                        onClick={() => {
+                          queuePanelLayoutChange((current) =>
+                            spawnPanelLayout(current, definition),
+                          );
+                          setPendingCenterPanelKey(definition.panel);
+                          if (resolvedLayout.length === 0) {
+                            setShouldFocusLayout(true);
+                          }
+                        }}
+                        className={cn(
+                          "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                          open &&
+                            !definition.allowMultiple &&
+                            "bg-white/[0.08] text-white",
+                        )}
                       >
-                        →
-                      </div>
-                    ) : null}
-                    <div
-                      data-testid={`studio-toolbar-zone-${stage.key}`}
-                      className="flex shrink-0 items-center gap-1.5 px-2 py-0"
-                    >
-                      <span className={CONTROL_KICKER}>
-                        {stage.label}
-                      </span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {stagePanels.map((definition) => {
-                          const panelAlreadyOpen = resolvedLayout.some(
-                            (item) => item.panel === definition.panel,
-                          );
-                          return (
-                            <Button
-                              key={definition.panel}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              aria-label={`Open ${definition.title} panel`}
-                              onClick={() => {
-                                queuePanelLayoutChange((current) =>
-                                  spawnPanelLayout(current, definition),
-                                );
-                                setPendingCenterPanelKey(definition.panel);
-                                if (resolvedLayout.length === 0) {
-                                  setShouldFocusLayout(true);
-                                }
-                              }}
-                              className={cn(
-                                "h-7 rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ds-fg-pink-1)]",
-                                panelAlreadyOpen &&
-                                  !definition.allowMultiple &&
-                                  "border-[rgba(255,118,144,0.36)] bg-[rgba(255,68,104,0.14)] text-white",
-                              )}
-                            >
-                              <definition.icon className="mr-1 h-3 w-3" />
-                              {definition.title}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </Fragment>
-                );
-              })}
-
-              {SIDE_CLUSTERS.map((cluster) => {
-                const clusterPanels = STAGE_PANEL_ORDER[cluster.key]
-                  .map((panelKey) =>
-                    panelDefinitions.find(
-                      (definition) => definition.panel === panelKey,
-                    ),
-                  )
-                  .filter(
-                    (definition): definition is StudioPanelDefinition =>
-                      Boolean(definition),
-                  );
-                if (clusterPanels.length === 0) return null;
-                return (
-                  <div
-                    key={cluster.key}
-                    data-testid={`studio-toolbar-zone-${cluster.key}`}
-                    className="flex shrink-0 items-center gap-1.5 px-2 py-0"
-                  >
-                    <span className={CONTROL_KICKER}>
-                      {cluster.label}
-                    </span>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {clusterPanels.map((definition) => {
-                        const panelAlreadyOpen = resolvedLayout.some(
-                          (item) => item.panel === definition.panel,
-                        );
-                        return (
-                          <Button
-                            key={definition.panel}
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            aria-label={`Open ${definition.title} panel`}
-                            onClick={() => {
-                              queuePanelLayoutChange((current) =>
-                                spawnPanelLayout(current, definition),
-                              );
-                              setPendingCenterPanelKey(definition.panel);
-                              if (resolvedLayout.length === 0) {
-                                setShouldFocusLayout(true);
-                              }
-                            }}
-                            className={cn(
-                              "h-7 rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ds-fg-pink-1)]",
-                              panelAlreadyOpen &&
-                                !definition.allowMultiple &&
-                                "border-[rgba(255,118,144,0.36)] bg-[rgba(255,68,104,0.14)] text-white",
-                            )}
-                          >
-                            <definition.icon className="mr-1 h-3 w-3" />
-                            {definition.title}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                        <PanelIcon className="h-3.5 w-3.5 opacity-80" />
+                        {definition.title}
+                      </button>
+                    );
+                  }),
+              )}
             </div>
 
             <div
@@ -1919,7 +1830,7 @@ export function StudioShell({
               className="flex shrink-0 items-center gap-1.5"
             >
               {selectedPanelIds.length > 0 ? (
-                <span className="shrink-0 rounded-full border border-[rgba(255,118,144,0.12)] bg-black/20 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#ffc8d3]">
+                <span className="shrink-0 rounded-md bg-white/[0.06] px-2 py-1 text-[12px] font-medium text-zinc-300">
                   {selectedPanelIds.length} Selected
                 </span>
               ) : null}
@@ -1940,10 +1851,10 @@ export function StudioShell({
                 }
                 onClick={() => toggleCanvasLocked()}
                 className={cn(
-                  "h-8 shrink-0 rounded-full border px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] hover:text-white",
+                  "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors",
                   canvasLocked
-                    ? "border-primary/60 bg-primary/15 text-white"
-                    : "border-[var(--ds-accent-a16)] bg-black/25 text-[var(--ds-fg-pink-1)]",
+                    ? "bg-white/[0.10] text-white"
+                    : "text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-100",
                 )}
               >
                 {canvasLocked ? (
@@ -1963,7 +1874,7 @@ export function StudioShell({
                   aria-expanded={layoutMenuOpen}
                   title="Layout presets, window management, and canvas actions"
                   onClick={() => setLayoutMenuOpen((open) => !open)}
-                  className="h-8 rounded-full border border-[var(--ds-accent-a16)] bg-black/25 px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--ds-fg-pink-1)] hover:text-white"
+                  className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100"
                 >
                   <Settings2 className="mr-1 h-3 w-3" />
                   Canvas
@@ -1979,9 +1890,9 @@ export function StudioShell({
                           top: layoutMenuPos.top,
                           left: layoutMenuPos.left,
                         }}
-                        className="z-[9999] flex max-h-[70vh] w-72 flex-col overflow-y-auto rounded-xl border border-[var(--ds-accent-a22)] bg-black/95 p-1 shadow-[0_18px_36px_rgba(0,0,0,0.55)] backdrop-blur-sm"
+                        className="z-[9999] flex max-h-[70vh] w-64 flex-col overflow-y-auto rounded-lg border border-white/10 bg-zinc-900 p-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
                       >
-                        <div className="px-2 pt-1.5 pb-1 font-mono text-[9px] uppercase tracking-[0.18em] text-[#ffc8d3]/45">
+                        <div className="px-2 pt-2 pb-1 text-[11px] font-medium text-zinc-500">
                           Layout presets
                         </div>
                         {LAYOUT_PRESETS.map(({ key: preset, label, hint }) => (
@@ -1997,18 +1908,18 @@ export function StudioShell({
                               setShouldFocusLayout(true);
                               setLayoutMenuOpen(false);
                             }}
-                            className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)] hover:text-white"
+                            className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white"
                           >
-                            <span className="uppercase tracking-[0.16em]">
+                            <span className="font-medium text-zinc-200">
                               {label}
                             </span>
-                            <span className="truncate text-[9px] uppercase tracking-[0.12em] text-[rgba(255,200,211,0.4)]">
+                            <span className="truncate text-[11px] text-zinc-500">
                               {hint}
                             </span>
                           </button>
                         ))}
-                        <div className="my-1 border-t border-[var(--ds-accent-a16)]" />
-                        <div className="px-2 pb-1 font-mono text-[9px] uppercase tracking-[0.18em] text-[#ffc8d3]/45">
+                        <div className="my-1.5 border-t border-white/[0.06]" />
+                        <div className="px-2 pb-1 text-[11px] font-medium text-zinc-500">
                           Arrange
                         </div>
                         <button
@@ -2027,7 +1938,7 @@ export function StudioShell({
                             );
                             setLayoutMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)] hover:text-white disabled:opacity-40"
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                         >
                           Group selected
                           {selectedPanelIds.length > 0
@@ -2049,7 +1960,7 @@ export function StudioShell({
                             );
                             setLayoutMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)] hover:text-white disabled:opacity-40"
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                         >
                           Ungroup selected
                         </button>
@@ -2080,7 +1991,7 @@ export function StudioShell({
                             setShouldFocusLayout(true);
                             setLayoutMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)] hover:text-white disabled:opacity-40"
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                         >
                           Tidy up windows
                         </button>
@@ -2092,12 +2003,12 @@ export function StudioShell({
                             centerOpenPanels();
                             setLayoutMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)] hover:text-white disabled:opacity-40"
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                         >
                           Center on panels
                         </button>
-                        <div className="my-1 border-t border-[var(--ds-accent-a16)]" />
-                        <div className="px-2 pb-1 font-mono text-[9px] uppercase tracking-[0.18em] text-[#ffc8d3]/45">
+                        <div className="my-1.5 border-t border-white/[0.06]" />
+                        <div className="px-2 pb-1 text-[11px] font-medium text-zinc-500">
                           Windows ({resolvedLayout.length})
                         </div>
                         {[...resolvedLayout]
@@ -2109,7 +2020,7 @@ export function StudioShell({
                             return (
                               <div
                                 key={item.id}
-                                className="flex items-center gap-2 rounded-lg px-2 py-1.5 font-mono text-[11px] text-[var(--ds-fg-pink-1)] hover:bg-[rgba(255,84,116,0.14)]"
+                                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-zinc-300 transition-colors hover:bg-white/[0.06]"
                               >
                                 <button
                                   type="button"
@@ -2137,7 +2048,7 @@ export function StudioShell({
                                       ),
                                     );
                                   }}
-                                  className="rounded-md p-1 text-[#ffc8d3]/70 hover:bg-[rgba(255,84,116,0.2)] hover:text-white"
+                                  className="rounded p-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>
@@ -2145,11 +2056,11 @@ export function StudioShell({
                             );
                           })}
                         {resolvedLayout.length === 0 ? (
-                          <div className="px-2 py-1.5 font-mono text-[10px] text-[#ffc8d3]/40">
+                          <div className="px-2 py-1.5 text-[12px] text-zinc-500">
                             No open windows
                           </div>
                         ) : null}
-                        <div className="my-1 border-t border-[var(--ds-accent-a16)]" />
+                        <div className="my-1.5 border-t border-white/[0.06]" />
                         <button
                           type="button"
                           aria-label="Clear canvas"
@@ -2163,7 +2074,7 @@ export function StudioShell({
                             }
                             setLayoutMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-mono text-[11px] text-red-300/80 hover:bg-[rgba(255,68,104,0.18)] hover:text-white disabled:opacity-40"
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:opacity-40"
                         >
                           Clear canvas
                         </button>
