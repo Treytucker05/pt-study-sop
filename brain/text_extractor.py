@@ -444,35 +444,44 @@ def _export_docling_markdown(doc: object, source_path: Path) -> str:
     raise RuntimeError("Docling conversion produced no content")
 
 
-def _extract_with_docling(path: Path) -> str:
-    """Extract text/markdown using Docling."""
+@lru_cache(maxsize=None)
+def _get_docling_converter(kind: str):
+    """Return a process-cached Docling DocumentConverter.
+
+    Rebuilding DocumentConverter per file reloads the ~770-weight
+    layout/OCR models every single time — the dominant cost in a bulk
+    sync (turned a folder sync into an hours-long crawl). Build one per
+    config and reuse it for every file:
+      - "pdf"     : PDF layout pipeline, OCR off
+      - "pdf_ocr" : PDF pipeline with forced OCR
+      - "default" : non-PDF (docx/pptx/etc.)
+    """
     from docling.document_converter import DocumentConverter
 
-    if path.suffix.lower() == ".pdf":
-        from docling.datamodel.base_models import InputFormat
-        from docling.document_converter import PdfFormatOption
+    if kind == "default":
+        return DocumentConverter()
 
-        pipeline_opts = _build_pdf_pipeline_options(ocr_mode=False)
-        converter = DocumentConverter(
-            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
-        )
-    else:
-        converter = DocumentConverter()
+    from docling.datamodel.base_models import InputFormat
+    from docling.document_converter import PdfFormatOption
 
+    pipeline_opts = _build_pdf_pipeline_options(ocr_mode=(kind == "pdf_ocr"))
+    return DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
+    )
+
+
+def _extract_with_docling(path: Path) -> str:
+    """Extract text/markdown using Docling (cached converter)."""
+    kind = "pdf" if path.suffix.lower() == ".pdf" else "default"
+    converter = _get_docling_converter(kind)
     result = converter.convert(str(path))
     doc = getattr(result, "document", result)
     return _export_docling_markdown(doc, path)
 
 
 def _docling_ocr_convert(pdf_path: str) -> str:
-    """Run Docling OCR on a single PDF file, return markdown."""
-    from docling.datamodel.base_models import InputFormat
-    from docling.document_converter import DocumentConverter, PdfFormatOption
-
-    pipeline_opts = _build_pdf_pipeline_options(ocr_mode=True)
-    converter = DocumentConverter(
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
-    )
+    """Run Docling forced-OCR on a single PDF (cached converter)."""
+    converter = _get_docling_converter("pdf_ocr")
     result = converter.convert(pdf_path)
     doc = getattr(result, "document", result)
     return _export_docling_markdown(doc, Path(pdf_path))
