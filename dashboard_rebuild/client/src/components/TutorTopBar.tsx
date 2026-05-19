@@ -186,18 +186,18 @@ function RuntimeValue({
   return (
     <div className={RUNTIME_CARD_BASE}>
       <div className="flex items-start justify-between gap-2">
-        <div className={CONTROL_KICKER}>{field.label}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+          {field.label}
+        </div>
         <Badge variant="outline" className={runtimeBadgeClasses(field.status)}>
           {field.status}
         </Badge>
       </div>
-      <div className="mt-2 font-mono text-base leading-7 text-foreground">
+      <div className="mt-2 text-base leading-6 text-zinc-200">
         {field.value}
       </div>
       {detail ? (
-        <div className="mt-2 font-mono text-sm leading-6 text-foreground/72">
-          {detail}
-        </div>
+        <div className="mt-2 text-sm leading-6 text-zinc-400">{detail}</div>
       ) : null}
     </div>
   );
@@ -601,10 +601,10 @@ export function TutorTopBar({
                 "min-w-[15rem] justify-between gap-3",
               )}
             >
-              <span className="font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/52">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                 Topic
               </span>
-              <span className="truncate text-sm text-foreground">
+              <span className="truncate text-[13px] text-zinc-200">
                 {topic || "Freeform"}
               </span>
             </div>

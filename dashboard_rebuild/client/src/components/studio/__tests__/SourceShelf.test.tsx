@@ -306,8 +306,10 @@ describe("SourceShelf", () => {
     });
 
     await waitFor(() => {
-      expect(allFilterButton).toHaveClass("text-white");
-      expect(vaultFilterButton).toHaveClass("text-foreground/82");
+      // Flat-modern palette: active filter is brighter neutral, inactive is
+      // dim neutral (was arcade pink/white).
+      expect(allFilterButton).toHaveClass("text-zinc-200");
+      expect(vaultFilterButton).toHaveClass("text-zinc-400");
       expect(courseFolderRow.tagName).toBe("BUTTON");
       expect(courseFolderRow).toHaveClass(
         "bg-transparent",

@@ -1814,7 +1814,7 @@ export function StudioShell({
                           "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
                           open &&
                             !definition.allowMultiple &&
-                            "bg-white/[0.08] text-white",
+                            "bg-rose-500/15 text-rose-50",
                         )}
                       >
                         <PanelIcon className="h-3.5 w-3.5 opacity-80" />
@@ -1853,7 +1853,7 @@ export function StudioShell({
                 className={cn(
                   "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors",
                   canvasLocked
-                    ? "bg-white/[0.10] text-white"
+                    ? "bg-rose-500/15 text-rose-50"
                     : "text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-100",
                 )}
               >
@@ -2092,7 +2092,7 @@ export function StudioShell({
             className={cn(
               "relative flex-1 scroll-mt-4 select-none overflow-hidden rounded-[var(--ds-r-100)] border border-[var(--ds-accent-a16)]",
               isCanvasDragging ? "cursor-grabbing" : "cursor-grab",
-              "bg-[radial-gradient(circle_at_top,rgba(255,68,104,0.10),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.24))]",
+              "bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(0,0,0,0.24))]",
             )}
             onPointerDown={(event) => {
               const target = event.target as HTMLElement | null;

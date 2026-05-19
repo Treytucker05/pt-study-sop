@@ -675,7 +675,7 @@ function SourceShelfTreeNode({
 
     return (
       <div
-        className="rounded-md border border-primary/12 bg-black/15 px-2 py-1.5"
+        className="rounded-md border border-white/[0.08] bg-black/15 px-2 py-1.5"
         style={{ marginLeft: `${depth * 10}px` }}
       >
         <div className="flex items-center gap-2">
@@ -695,14 +695,14 @@ function SourceShelfTreeNode({
               </span>
               <Badge
                 variant="outline"
-                className="shrink-0 rounded-full border-primary/20 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-primary"
+                className="shrink-0 rounded-full border-white/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-zinc-400"
               >
                 {node.badge}
               </Badge>
               {node.sourceType === "vault" ? (
                 <Badge
                   variant="outline"
-                  className="shrink-0 rounded-full border-primary/12 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/75"
+                  className="shrink-0 rounded-full border-white/[0.08] px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wider text-zinc-500"
                 >
                   Vault
                 </Badge>
@@ -710,7 +710,7 @@ function SourceShelfTreeNode({
             </div>
             {shouldShowDetail ? (
               <div
-                className="truncate text-[11px] text-foreground/60"
+                className="truncate text-[11px] text-zinc-500"
                 title={node.workspaceObject.detail}
               >
                 {node.detail}
@@ -724,7 +724,7 @@ function SourceShelfTreeNode({
               onClick={() => onOpenInDocumentDock?.(node.workspaceObject)}
               aria-label={`Open ${node.label} in Document Dock`}
               title="Open in Document Dock"
-              className="h-6 w-6 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white"
+              className="h-6 w-6 rounded-full border-white/10 bg-black/20 p-0 text-zinc-200 hover:bg-black/30 hover:text-white"
             >
               <ExternalLink className="h-3 w-3" />
             </Button>
@@ -742,7 +742,7 @@ function SourceShelfTreeNode({
                 title={
                   isInWorkspace ? "Already in workspace" : "Add to workspace"
                 }
-                className="h-6 w-6 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/82"
+                className="h-6 w-6 rounded-full border-white/10 bg-black/20 p-0 text-zinc-200 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-zinc-300"
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -761,7 +761,7 @@ function SourceShelfTreeNode({
 
   return (
     <div className="space-y-1" style={{ marginLeft: `${depth * 10}px` }}>
-      <div className="flex items-center gap-2 border-l border-primary/20 py-0.5 pl-2">
+      <div className="flex items-center gap-2 border-l border-white/10 py-0.5 pl-2">
         <TreeCheckbox
           checked={allChecked}
           indeterminate={partiallyChecked}
@@ -776,19 +776,19 @@ function SourceShelfTreeNode({
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm bg-transparent px-1 py-0.5 text-left transition-colors hover:bg-white/5"
         >
           {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           )}
           {node.folderType === "course" ? (
-            <FolderTree className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <FolderTree className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           ) : (
-            <Folder className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <Folder className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           )}
           <span className="min-w-0 flex-1 truncate text-sm text-white">
             {node.label}
           </span>
-          <span className="shrink-0 text-[10px] text-foreground/70">
+          <span className="shrink-0 text-[11px] text-zinc-400">
             {checkedLeafCount}/{leafNodes.length} loaded
           </span>
         </button>
@@ -1143,9 +1143,9 @@ export function SourceShelf({
   return (
     <div
       data-testid="source-shelf-content"
-      className="flex h-full min-h-0 flex-col gap-4 font-mono text-sm text-foreground/82"
+      className="flex h-full min-h-0 flex-col gap-4 text-[13px] text-zinc-300"
     >
-      <div className="space-y-3 rounded-[var(--ds-r-095)] border border-primary/15 bg-black/15 p-3">
+      <div className="space-y-3 rounded-lg border border-white/[0.06] bg-zinc-950/40 p-3">
         <div className="flex flex-wrap gap-2">
           {SOURCE_FILTERS.map(([filterId, label]) => {
             const isActive = activeFilter === filterId;
@@ -1158,8 +1158,8 @@ export function SourceShelf({
                 aria-pressed={isActive}
                 className={
                   isActive
-                    ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white"
-                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/82"
+                    ? "h-8 rounded-full border-white/15 bg-black/20 px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-200"
+                    : "h-8 rounded-full border-white/10 bg-transparent px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400"
                 }
               >
                 {label}
@@ -1170,12 +1170,12 @@ export function SourceShelf({
 
         <div className="flex flex-wrap gap-2">
           <label className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/48" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search sources..."
-              className="h-10 w-full rounded-full border border-primary/18 bg-black/20 pl-10 pr-4 font-mono text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-primary/32"
+              className="h-10 w-full rounded-full border border-white/10 bg-black/20 pl-10 pr-4 text-[13px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-white/15"
             />
           </label>
 
@@ -1189,7 +1189,7 @@ export function SourceShelf({
                 ? `Re-index ${resolvedRootFolder} into Library by its folder structure — no re-upload needed.`
                 : "Root Folder not resolved — set TUTOR_MATERIALS_DIR / PT_SCHOOL_MATERIALS_DIR (brain/.env)."
             }
-            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
+            className="h-10 rounded-full border-white/10 bg-black/20 px-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-200/82 hover:bg-black/30 hover:text-white"
           >
             {syncing ? (
               <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -1203,7 +1203,7 @@ export function SourceShelf({
             variant="outline"
             onClick={() => uploadInputRef.current?.click()}
             disabled={isUploading}
-            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
+            className="h-10 rounded-full border-white/10 bg-black/20 px-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-200/82 hover:bg-black/30 hover:text-white"
           >
             <Upload className="mr-2 h-3.5 w-3.5" />
             {isUploading ? "Uploading..." : "Upload to Current Run"}
@@ -1221,19 +1221,19 @@ export function SourceShelf({
 
         <div
           data-testid="source-shelf-root-folder"
-          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[10px] uppercase tracking-[0.18em] text-foreground/60"
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500"
         >
-          <span className="text-primary">Root Folder</span>
+          <span className="text-zinc-400">Root Folder</span>
           {resolvedRootFolder ? (
             <>
               <span
                 title={resolvedRootFolder}
-                className="max-w-full truncate font-mono normal-case tracking-normal text-foreground/82"
+                className="max-w-full truncate font-mono normal-case tracking-normal text-zinc-300"
               >
                 {resolvedRootFolder}
               </span>
               {typeof rootFolderFileCount === "number" ? (
-                <span className="text-foreground/45">
+                <span className="text-zinc-500">
                   · {rootFolderFileCount} file
                   {rootFolderFileCount === 1 ? "" : "s"}
                 </span>
@@ -1253,20 +1253,20 @@ export function SourceShelf({
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/15 p-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
+        <div className="rounded-lg border border-white/[0.06] bg-zinc-950/40 p-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Course
           </div>
           <div className="mt-1 text-sm text-white">
             {courseName || "No course selected"}
           </div>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Study Unit
           </div>
           <div className="mt-1 text-sm text-white">
             {studyUnit || "No study unit selected"}
           </div>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Topic
           </div>
           <div className="mt-1 text-sm text-white">
@@ -1274,8 +1274,8 @@ export function SourceShelf({
           </div>
         </div>
 
-        <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/15 p-3">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
+        <div className="rounded-lg border border-white/[0.06] bg-zinc-950/40 p-3">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             <BookOpen className="h-3.5 w-3.5" />
             Current Run
           </div>
@@ -1286,18 +1286,18 @@ export function SourceShelf({
           <div className="mt-1 text-sm text-foreground/90">
             {runVaultCount} vault link{runVaultCount === 1 ? "" : "s"} loaded
           </div>
-          <div className="mt-3 break-all text-xs text-foreground/75">
+          <div className="mt-3 break-all text-xs text-zinc-400">
             {normalizedVaultFolder || "Vault path not derived yet"}
           </div>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col rounded-[var(--ds-r-100)] border border-primary/14 bg-black/10 p-3">
+      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-white/[0.06] bg-black/10 p-3">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Unified Source Tree
           </div>
-          <div className="text-xs text-foreground/75">
+          <div className="text-xs text-zinc-400">
             {activeFilter === "current_run"
               ? "Showing loaded sources"
               : activeFilter === "library"
