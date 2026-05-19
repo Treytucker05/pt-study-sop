@@ -1456,6 +1456,36 @@ def _relink_and_report() -> None:
         print(f"  {v:5d}  {k}", flush=True)
 
 
+def _cli_embed(args: argparse.Namespace) -> None:
+    """Embed the materials corpus into ChromaDB (semantic retrieval).
+
+    Ingestion/classification works without this, but the tutor's
+    semantic search over the library is empty until docs are embedded.
+    embed_rag_docs has its own per-doc timeout (hang-resistant) and is
+    incremental (skips already-embedded, unchanged docs). Safe to run
+    detached; re-runnable.
+    """
+    import time as _time
+
+    from tutor_rag import embed_rag_docs
+
+    corpus = args.corpus or "materials"
+    last = [0.0]
+
+    def _progress(done: int, total: int, current: str) -> None:
+        now = _time.time()
+        if now - last[0] >= 5 or done >= total:
+            last[0] = now
+            print(
+                f"[embed] {done}/{total} {os.path.basename(current or '')}",
+                flush=True,
+            )
+
+    print(f"[embed] corpus={corpus} starting ...", flush=True)
+    result = embed_rag_docs(corpus=corpus, progress_callback=_progress)
+    print(f"[embed] DONE {result}", flush=True)
+
+
 def _cli_relink(args: argparse.Namespace) -> None:
     """Just run the folder->course relink + byClass (no sync/extraction)."""
     _relink_and_report()
@@ -1628,6 +1658,18 @@ def main(argv: Optional[List[str]] = None) -> None:
         "rows + print byClass (no sync/extraction; pure metadata).",
     )
     relink_p.set_defaults(func=_cli_relink)
+
+    embed_p = subparsers.add_parser(
+        "embed",
+        help="Embed a corpus into ChromaDB for semantic retrieval "
+        "(incremental, hang-resistant; default corpus=materials).",
+    )
+    embed_p.add_argument(
+        "--corpus",
+        default="materials",
+        help="Corpus to embed (default: materials)",
+    )
+    embed_p.set_defaults(func=_cli_embed)
 
     search_p = subparsers.add_parser(
         "search", help="Search ingested notes for a query string"
