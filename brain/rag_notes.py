@@ -1509,6 +1509,27 @@ def _cli_folder_sync(args: argparse.Namespace) -> None:
                 flush=True,
             )
 
+    only_paths: Optional[set] = None
+    only = getattr(args, "only", None)
+    if only:
+        needle = only.replace("\\", "/").strip("/").lower()
+        only_paths = set()
+        for dp, _dn, fns in os.walk(root):
+            for fn in fns:
+                rel = os.path.relpath(
+                    os.path.join(dp, fn), root
+                ).replace("\\", "/")
+                if needle in rel.lower():
+                    only_paths.add(rel)
+        print(
+            f"[folder-sync] --only '{only}' -> {len(only_paths)} matching "
+            f"file(s); other docs untouched (prune skipped).",
+            flush=True,
+        )
+        if not only_paths:
+            print("[folder-sync] no files match --only; nothing to do.", flush=True)
+            return
+
     print(
         f"[folder-sync] root={root} "
         f"per_file_timeout={os.environ['RAG_SYNC_PER_FILE_TIMEOUT']} "
@@ -1516,7 +1537,11 @@ def _cli_folder_sync(args: argparse.Namespace) -> None:
         flush=True,
     )
     result = sync_folder_to_rag(
-        root, corpus="materials", course_id=None, progress_callback=_progress
+        root,
+        corpus="materials",
+        course_id=None,
+        include_paths=only_paths,
+        progress_callback=_progress,
     )
     print(
         f"[sync done] processed={result.get('processed')}/{result.get('total')} "
@@ -1587,6 +1612,13 @@ def main(argv: Optional[List[str]] = None) -> None:
         "--embed",
         action="store_true",
         help="Also run embeddings after relink (slow; optional)",
+    )
+    fs_p.add_argument(
+        "--only",
+        default=None,
+        help="Only (re)sync files whose path contains this substring "
+        "(e.g. 'Mobility in Context'); prune is skipped, other docs "
+        "left untouched. Ideal after OCR'ing one book.",
     )
     fs_p.set_defaults(func=_cli_folder_sync)
 

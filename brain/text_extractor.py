@@ -15,6 +15,7 @@ import hashlib
 import importlib.util
 import logging
 import inspect
+import os
 import re
 import subprocess
 import tempfile
@@ -163,6 +164,54 @@ def _extract_pdf_pdfplumber(path: Path) -> str:
 # ---------------------------------------------------------------------------
 # Chapter splitter — for huge textbook PDFs that choke the heavy extractor
 # ---------------------------------------------------------------------------
+
+def _pdf_text_layer(path: Path) -> tuple[str, int, int]:
+    """Fast probe: return (text, char_count, page_count) from the PDF's
+    embedded text layer via PyMuPDF. Milliseconds even for big files;
+    used to decide whether we can skip the heavy Docling pipeline
+    (which can hang on perfectly text-extractable PDFs). Returns
+    ("", 0, 0) if PyMuPDF is unavailable or the file can't be opened.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except Exception:
+        return "", 0, 0
+    try:
+        doc = fitz.open(str(path))
+    except Exception:
+        return "", 0, 0
+    try:
+        parts: list[str] = []
+        for page in doc:
+            try:
+                parts.append(page.get_text())
+            except Exception:
+                continue
+        text = "\n".join(parts)
+        return text, len(text.strip()), doc.page_count
+    finally:
+        try:
+            doc.close()
+        except Exception:
+            pass
+
+
+def _has_rich_text_layer(char_count: int, page_count: int) -> bool:
+    """Heuristic: a PDF with a genuine text layer yields lots of text
+    per page. Scanned/image-only PDFs yield ~none. Require a solid
+    floor AND a per-page density so sparse image-heavy decks still go
+    to Docling. Override with PDF_FORCE_DOCLING=1.
+    """
+    if os.environ.get("PDF_FORCE_DOCLING", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    ):
+        return False
+    if page_count <= 0:
+        return False
+    return char_count >= max(1000, 100 * page_count)
+
 
 def split_pdf_into_chapters(
     path: str,
@@ -709,14 +758,47 @@ def extract_text(file_path: str) -> dict:
         extractor_source = ""
 
         if ext == ".pdf":
-            docling_content, extraction_errors = _try_docling(path)
-            if docling_content is not None:
-                content = docling_content
-                extractor_name = "docling"
-                extractor_source = "docling"
+            # Fast path: if the PDF already has a rich embedded text
+            # layer, extract it directly and SKIP Docling. Docling can
+            # hang for many minutes (or forever) on perfectly
+            # text-extractable PDFs (observed on the OCR'd "Mobility in
+            # Context" chapters); a PyMuPDF text read is instant and
+            # reliable. Docling is reserved for genuinely scanned/
+            # image-only PDFs where there's no text layer to read.
+            fast_text, fast_chars, fast_pages = _pdf_text_layer(path)
+            if _has_rich_text_layer(fast_chars, fast_pages):
+                content = fast_text
+                extractor_name = "pymupdf-textlayer"
+                extractor_source = "textlayer"
+                if _check_pymupdf4llm():
+                    try:
+                        md = _extract_pdf_pymupdf4llm(path)
+                        if md.strip() and not _has_garbled_content(md):
+                            content = md
+                            extractor_name = "pymupdf4llm-textlayer"
+                    except Exception as exc:
+                        extraction_errors.append(f"pymupdf4llm: {exc}")
+                if _has_garbled_content(content):
+                    # Garbled embedded text (broken font maps) — let
+                    # Docling/OCR try instead.
+                    extraction_errors.append(
+                        "textlayer: garbled, falling back to docling"
+                    )
+                    docling_content, derrs = _try_docling(path)
+                    extraction_errors.extend(derrs)
+                    if docling_content is not None:
+                        content = docling_content
+                        extractor_name = "docling"
+                        extractor_source = "docling"
             else:
-                content, extractor_name = _extract_pdf(path)
-                extractor_source = "fallback"
+                docling_content, extraction_errors = _try_docling(path)
+                if docling_content is not None:
+                    content = docling_content
+                    extractor_name = "docling"
+                    extractor_source = "docling"
+                else:
+                    content, extractor_name = _extract_pdf(path)
+                    extractor_source = "fallback"
         elif ext == ".docx":
             docling_content, extraction_errors = _try_docling(path)
             if docling_content is not None:
