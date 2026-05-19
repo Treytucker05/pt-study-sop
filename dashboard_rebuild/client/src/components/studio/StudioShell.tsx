@@ -1768,18 +1768,18 @@ export function StudioShell({
         <>
           <div
             data-testid="studio-shell"
-            className="flex h-full min-h-0 flex-col gap-3"
+            className="flex h-full min-h-0 flex-col gap-2"
           >
             <div
               data-testid="studio-toolbar"
               className={cn(
                 CONTROL_DECK,
-                "flex w-full flex-col gap-2 overflow-visible px-4 py-2.5",
+                "flex w-full flex-col gap-1 overflow-visible px-3 py-1.5",
               )}
             >
             <div
               data-testid="studio-toolbar-pipeline"
-              className="flex flex-wrap items-stretch gap-x-2 gap-y-2"
+              className="flex flex-nowrap items-center gap-x-1.5 overflow-x-auto pb-0.5 [scrollbar-width:thin]"
             >
               {PIPELINE_STAGES.map((stage, stageIndex) => {
                 const stagePanels = STAGE_PANEL_ORDER[stage.key]
@@ -1805,7 +1805,7 @@ export function StudioShell({
                     ) : null}
                     <div
                       data-testid={`studio-toolbar-zone-${stage.key}`}
-                      className="flex flex-col gap-1.5 px-3 py-1"
+                      className="flex shrink-0 items-center gap-1.5 px-2 py-0"
                     >
                       <span className={CONTROL_KICKER}>
                         {stage.label}
@@ -1832,13 +1832,13 @@ export function StudioShell({
                                 }
                               }}
                               className={cn(
-                                "rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
+                                "h-7 rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ds-fg-pink-1)]",
                                 panelAlreadyOpen &&
                                   !definition.allowMultiple &&
                                   "border-[rgba(255,118,144,0.36)] bg-[rgba(255,68,104,0.14)] text-white",
                               )}
                             >
-                              <definition.icon className="mr-1.5 h-3.5 w-3.5" />
+                              <definition.icon className="mr-1 h-3 w-3" />
                               {definition.title}
                             </Button>
                           );
@@ -1865,7 +1865,7 @@ export function StudioShell({
                   <div
                     key={cluster.key}
                     data-testid={`studio-toolbar-zone-${cluster.key}`}
-                    className="flex flex-col gap-1.5 px-3 py-1"
+                    className="flex shrink-0 items-center gap-1.5 px-2 py-0"
                   >
                     <span className={CONTROL_KICKER}>
                       {cluster.label}
@@ -1892,13 +1892,13 @@ export function StudioShell({
                               }
                             }}
                             className={cn(
-                              "rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]",
+                              "h-7 rounded-full border-[rgba(255,118,144,0.18)] bg-black/25 px-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ds-fg-pink-1)]",
                               panelAlreadyOpen &&
                                 !definition.allowMultiple &&
                                 "border-[rgba(255,118,144,0.36)] bg-[rgba(255,68,104,0.14)] text-white",
                             )}
                           >
-                            <definition.icon className="mr-1.5 h-3.5 w-3.5" />
+                            <definition.icon className="mr-1 h-3 w-3" />
                             {definition.title}
                           </Button>
                         );
@@ -1911,9 +1911,9 @@ export function StudioShell({
 
             <div
               data-testid="studio-toolbar-controls"
-              className="flex flex-wrap items-end gap-x-2 gap-y-2 border-t border-primary/15 pt-2.5 mt-0.5"
+              className="flex flex-nowrap items-center gap-x-1.5 overflow-x-auto border-t border-primary/15 pt-1.5 mt-0.5 [scrollbar-width:thin]"
             >
-              <div className="flex flex-col gap-1.5 px-2.5 py-1">
+              <div className="flex shrink-0 items-center gap-1.5 px-2 py-0">
                 <span className={CONTROL_KICKER}>
                   START
                 </span>
@@ -1970,7 +1970,7 @@ export function StudioShell({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 px-3 py-1">
+              <div className="flex shrink-0 items-center gap-1.5 px-2 py-0">
                 <span className={CONTROL_KICKER}>
                   SELECT
                 </span>
@@ -2016,7 +2016,7 @@ export function StudioShell({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 px-3 py-1">
+              <div className="flex shrink-0 items-center gap-1.5 px-2 py-0">
                 <span className={CONTROL_KICKER}>
                   ARRANGE
                 </span>
