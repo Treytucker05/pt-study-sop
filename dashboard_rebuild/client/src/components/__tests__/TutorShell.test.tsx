@@ -1962,7 +1962,10 @@ describe("TutorShell studio routing", () => {
 
     expect(workspace).toHaveTextContent("1 active canvas object");
 
-    await user.click(screen.getByRole("button", { name: /clear canvas/i }));
+    await user.click(screen.getByRole("button", { name: /canvas actions/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /clear canvas/i }),
+    );
 
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-workspace-panel")).not.toBeInTheDocument();
@@ -2175,6 +2178,9 @@ describe("TutorShell studio routing", () => {
       },
     });
 
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /canvas actions/i }))[0],
+    );
     const clearCanvasButton = await screen.findByRole("button", {
       name: /clear canvas/i,
     });
@@ -2190,6 +2196,9 @@ describe("TutorShell studio routing", () => {
       },
     });
 
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /canvas actions/i }))[0],
+    );
     const groupButtons = await screen.findAllByRole("button", {
       name: /group selected windows/i,
     });
