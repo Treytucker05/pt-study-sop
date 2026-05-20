@@ -2,6 +2,12 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-05-19 - Tutor study run epic (#160–#166)
+
+- Shipped General Q&A + teach gate, study-run lifecycle hero, multi-leg teach list, versioned working summaries, prompt assembler (summary + recency tail), and polish draft checkpoint/final flow on branch `design-system/token-remediation` (`b3f1e476`).
+- Closed GitHub #160–#166.
+- Validation: pytest tutor dual-mode/lifecycle/memory (13), Vitest tutor suite (117), `npm run build`, `./scripts/tutor-browser-dogfood.sh`.
+
 ## 2026-05-15 - Library catalog-only boundary
 
 - Simplified `/library` into an uploaded-file catalog and upload surface: primary tabs are now `All Files` and `Upload`.

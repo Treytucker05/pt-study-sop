@@ -732,7 +732,13 @@ export function TutorChat({
       (material.file_type === "mp4" ||
         material.source_path?.toLowerCase().endsWith(".mp4")),
   ).length;
-  const sessionKind = sessionContext?.sessionSnapshot?.content_filter?.session_kind;
+  const rawContentFilter = sessionContext?.sessionSnapshot?.content_filter;
+  const sessionKind =
+    rawContentFilter &&
+    typeof rawContentFilter === "object" &&
+    !Array.isArray(rawContentFilter)
+      ? (rawContentFilter as { session_kind?: string }).session_kind
+      : undefined;
   const defaultTurnMode = sessionKind === "general" ? "general" : "tutor";
   const hasTeachChain = Boolean(sessionContext?.sessionSnapshot?.method_chain_id);
 

@@ -28,6 +28,27 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 - Historical note: detailed implementation evidence still lives in the linked Conductor tracks plus `conductor/tracks/GENERAL/log.md`.
 - Ops note (2026-03-25): `dev-browser` is now a shared agent skill projected into every supported agent root; this does not change Tutor sprint priority.
 
+- [x] TUTOR-STUDY-RUN-EPIC-2026-05-19. Close GitHub epic #160 and slices #161–#166 (General Q&A, lifecycle hero, teach legs, working summary, prompt assembler, polish drafts).
+  - Scope:
+    - Dual-mode teach gate (#161): General Q&A vs gated START TUTOR; `interaction_mode` on turns.
+    - Study-run lifecycle hero (#162): END TEACH / NEW TEACH / FINISH STUDY RUN without merging legs.
+    - Teach leg list (#163): `workflow_id` on sessions; `GET .../teach-legs`; `TutorTeachLegList` UI.
+    - Working summary compaction (#164): `tutor_working_summaries`; `POST .../compact` (tutor turns only).
+    - Prompt assembler + memory panel (#165): summary + recency tail in `send_turn`; context pressure vs working summary labels.
+    - Polish drafts (#166): checkpoint on compact, final on end teach, approve → captured note.
+  - Assignee: @cursor
+  - Completed: 2026-05-19
+  - Commits: `109cc806` (#161–#162), `961a0a41` (E2E), `b3f1e476` (#163–#166)
+  - Branch: `design-system/token-remediation` (PR #159)
+  - Validation:
+    - `.venv/bin/python -m pytest brain/tests/test_tutor_dual_mode.py brain/tests/test_tutor_lifecycle.py brain/tests/test_tutor_memory_slices.py -q` (13 passed)
+    - `npm run test --` tutor Vitest slice (117 passed)
+    - `npm run check`
+    - `npm run build`
+    - `./scripts/tutor-browser-dogfood.sh`
+  - Done when:
+    - GitHub #160–#166 closed with verification notes; dashboard serves built `brain/static/dist/` after operator restart.
+
 - [x] LIBRARY-FILE-EXPLORER-TABLE-2026-05-15. Add basic file-explorer controls to the Library file list before bigger visual redesign work.
   - Scope:
     - Let table columns resize by dragging header separators.
