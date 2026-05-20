@@ -626,10 +626,11 @@ function useTutorPageController() {
     [hub],
   );
 
-  const handleTutorSessionAction = useCallback(async () => {
+  const handleNewSessionHero = useCallback(async () => {
     if (sessionActionPending) return;
-    const activeWorkflowId = workflow.activeWorkflowId;
-    const hasActiveWork = Boolean(liveTutorSessionId || activeWorkflowId);
+    const hasActiveWork = Boolean(
+      liveTutorSessionId || workflow.activeWorkflowId,
+    );
     if (showSetup && panelLayout.length === 0 && !hasActiveWork) {
       if (entryCardFlashTimeoutRef.current) {
         clearTimeout(entryCardFlashTimeoutRef.current);
@@ -640,42 +641,6 @@ function useTutorPageController() {
         setEntryCardFlashActive(false);
         entryCardFlashTimeoutRef.current = null;
       }, 1000);
-      return;
-    }
-    // Audit 2026-04-22: a "session" in the user's mental model is the whole
-    // study workflow (Start Priming → Priming → Workspace/Packets → Tutor →
-    // Polish), not just the Tutor chat. The hero button must treat any
-    // active workflow OR a live tutor session as "in a session" so the
-    // label + confirm gate fire correctly. Live tutor sessions still go
-    // through endSessionById so server-side stage timers and vault save
-    // run; workflow-only cases (e.g. mid-Priming) just reset the
-    // workspace locally — the workflow persists on the server and shows
-    // up under PREVIOUS SESSIONS for resume or bulk-delete.
-    if (hasActiveWork) {
-      const confirmMessage = liveTutorSessionId
-        ? "End the current Tutor session? Your workflow progress stays saved and you can resume it from Previous Sessions."
-        : "End the current study session? Your Priming and workspace progress stay saved and you can resume this workflow from Previous Sessions.";
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-      setSessionActionPending(true);
-      suppressProjectShellRestoreRef.current = true;
-      resumedFromProjectShellRef.current = true;
-      try {
-        if (liveTutorSessionId) {
-          await session.endSessionById(liveTutorSessionId);
-        } else {
-          resetTutorWorkspaceHome();
-        }
-      } catch (error) {
-        toast.error(
-          `Failed to end session: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-        );
-      } finally {
-        setSessionActionPending(false);
-      }
       return;
     }
     setSessionActionPending(true);
@@ -697,9 +662,117 @@ function useTutorPageController() {
     liveTutorSessionId,
     panelLayout.length,
     resetTutorWorkspaceHome,
-    session,
     sessionActionPending,
     showSetup,
+    workflow.activeWorkflowId,
+  ]);
+
+  const handleEndTeach = useCallback(async () => {
+    if (sessionActionPending || !liveTutorSessionId) return;
+    if (
+      !window.confirm(
+        "End teach? This closes the current teach leg only. Your study run stays open for another teach leg or polish.",
+      )
+    ) {
+      return;
+    }
+    setSessionActionPending(true);
+    suppressProjectShellRestoreRef.current = true;
+    resumedFromProjectShellRef.current = true;
+    try {
+      await session.endSessionById(liveTutorSessionId, {
+        advanceWorkflow: false,
+      });
+    } catch (error) {
+      toast.error(
+        `Failed to end teach: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSessionActionPending(false);
+    }
+  }, [
+    liveTutorSessionId,
+    session,
+    sessionActionPending,
+  ]);
+
+  const handleNewTeach = useCallback(async () => {
+    if (sessionActionPending) return;
+    if (liveTutorSessionId) {
+      if (
+        !window.confirm(
+          "Start a new teach leg? The current teach leg will end first; your study run stays open.",
+        )
+      ) {
+        return;
+      }
+      setSessionActionPending(true);
+      try {
+        await session.endSessionById(liveTutorSessionId, {
+          advanceWorkflow: false,
+        });
+      } catch (error) {
+        toast.error(
+          `Failed to end current teach leg: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
+        setSessionActionPending(false);
+        return;
+      }
+      setSessionActionPending(false);
+    }
+    setShowSetup(false);
+    setPanelLayout(buildStudioShellPresetLayout("study"));
+    toast.success("Choose materials and START TUTOR for the new teach leg.");
+  }, [
+    liveTutorSessionId,
+    session,
+    sessionActionPending,
+    setPanelLayout,
+    setShowSetup,
+  ]);
+
+  const handleFinishStudyRun = useCallback(async () => {
+    if (sessionActionPending) return;
+    const activeWorkflowId = workflow.activeWorkflowId;
+    if (!activeWorkflowId) return;
+    if (
+      !window.confirm(
+        liveTutorSessionId
+          ? "Finish study run? The active teach leg will stay in history; you will need a new study run to teach again."
+          : "Finish study run? Priming and workspace progress stay saved under Previous Sessions, but this run will close.",
+      )
+    ) {
+      return;
+    }
+    setSessionActionPending(true);
+    suppressProjectShellRestoreRef.current = true;
+    resumedFromProjectShellRef.current = true;
+    try {
+      await api.tutor.finishStudyRun(activeWorkflowId);
+      await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["tutor-workflow-detail", activeWorkflowId],
+      });
+      resetTutorWorkspaceHome();
+      toast.success("Study run finished.");
+    } catch (error) {
+      toast.error(
+        `Failed to finish study run: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSessionActionPending(false);
+    }
+  }, [
+    liveTutorSessionId,
+    queryClient,
+    resetTutorWorkspaceHome,
+    sessionActionPending,
     workflow.activeWorkflowId,
   ]);
 
@@ -1219,27 +1292,86 @@ function useTutorPageController() {
       stats={tutorHeroStats}
       actions={
         <>
-          <HudButton
-            variant="primary"
-            className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
-            disabled={sessionActionPending}
-            title={
-              (liveTutorSessionId || workflow.activeWorkflowId) &&
-              !sessionActionPending
-                ? "End the current study session and save progress to your vault"
-                : "Open the entry card to set up and start a new study session"
-            }
-            onClick={() => {
-              void handleTutorSessionAction();
-            }}
-          >
-            <span className="tutor-hero-action__label">
-              {(liveTutorSessionId || workflow.activeWorkflowId) &&
-              !sessionActionPending
-                ? "END SESSION"
-                : "NEW SESSION"}
-            </span>
-          </HudButton>
+          {liveTutorSessionId ? (
+            <>
+              <HudButton
+                variant="outline"
+                className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-end-teach"
+                title="Close the current teach leg only; study run stays open"
+                onClick={() => {
+                  void handleEndTeach();
+                }}
+              >
+                <span className="tutor-hero-action__label">END TEACH</span>
+              </HudButton>
+              <HudButton
+                variant="outline"
+                className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-new-teach"
+                title="End the current leg (if needed) and start another teach leg in this study run"
+                onClick={() => {
+                  void handleNewTeach();
+                }}
+              >
+                <span className="tutor-hero-action__label">NEW TEACH</span>
+              </HudButton>
+              <HudButton
+                variant="primary"
+                className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-finish-study-run"
+                title="Close the whole study run (workflow)"
+                onClick={() => {
+                  void handleFinishStudyRun();
+                }}
+              >
+                <span className="tutor-hero-action__label">FINISH STUDY RUN</span>
+              </HudButton>
+            </>
+          ) : workflow.activeWorkflowId ? (
+            <>
+              <HudButton
+                variant="primary"
+                className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-finish-study-run"
+                title="Close the whole study run (workflow)"
+                onClick={() => {
+                  void handleFinishStudyRun();
+                }}
+              >
+                <span className="tutor-hero-action__label">FINISH STUDY RUN</span>
+              </HudButton>
+              <HudButton
+                variant="outline"
+                className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-new-session"
+                title="Open the entry card to set up and start a new study session"
+                onClick={() => {
+                  void handleNewSessionHero();
+                }}
+              >
+                <span className="tutor-hero-action__label">NEW SESSION</span>
+              </HudButton>
+            </>
+          ) : (
+            <HudButton
+              variant="primary"
+              className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+              disabled={sessionActionPending}
+              data-testid="tutor-hero-new-session"
+              title="Open the entry card to set up and start a new study session"
+              onClick={() => {
+                void handleNewSessionHero();
+              }}
+            >
+              <span className="tutor-hero-action__label">NEW SESSION</span>
+            </HudButton>
+          )}
           {resumeCandidate ? (
             <HudButton
               variant="outline"

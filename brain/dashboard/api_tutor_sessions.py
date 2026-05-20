@@ -60,6 +60,7 @@ from dashboard.api_tutor_utils import (
     _collect_objectives_from_payload,
     _prime_assessment_violations,
     _unlink_all_tutor_session_learning_objectives,
+    _validate_teach_session_create,
 )
 
 from dashboard.api_tutor_vault import (
@@ -636,6 +637,46 @@ def create_session():
 
     conn = get_connection()
     _ensure_selector_columns(conn)
+    session_kind = str(data.get("session_kind") or "").strip().lower()
+    explicit_teach_leg_label = str(data.get("teach_leg_label") or "").strip()
+    teach_leg_label = explicit_teach_leg_label or str(topic or "").strip()
+    is_strict_teach = session_kind == "tutor" or bool(explicit_teach_leg_label)
+    if session_kind == "tutor" and not method_chain_id:
+        conn.close()
+        return (
+            jsonify(
+                {
+                    "error": "Tutor teach requires a template chain or one custom method.",
+                    "code": "TEACH_CHAIN_REQUIRED",
+                }
+            ),
+            400,
+        )
+    if method_chain_id and is_strict_teach:
+        if not isinstance(content_filter, dict):
+            content_filter = {}
+        ok, code, message = _validate_teach_session_create(
+            conn,
+            method_chain_id=method_chain_id,
+            teach_leg_label=teach_leg_label,
+            content_filter=content_filter,
+        )
+        if not ok:
+            conn.close()
+            return jsonify({"error": message, "code": code}), 400
+        content_filter["teach_leg_label"] = teach_leg_label
+        content_filter["session_kind"] = "tutor"
+        if not str(topic or "").strip():
+            topic = teach_leg_label
+    elif method_chain_id:
+        if not isinstance(content_filter, dict):
+            content_filter = {}
+        content_filter.setdefault("session_kind", "tutor")
+    else:
+        if not isinstance(content_filter, dict):
+            content_filter = {}
+        content_filter["session_kind"] = "general"
+
     cur = conn.cursor()
     linked_brain_session_id: Optional[int] = None
     if brain_session_id is not None:
@@ -1078,6 +1119,9 @@ def end_session(session_id: str):
     from dashboard.api_tutor import _ensure_selector_columns
     from dashboard.api_tutor_turns import _get_tutor_session
 
+    payload = request.get_json(silent=True) or {}
+    advance_workflow = bool(payload.get("advance_workflow", True))
+
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
     if not session:
@@ -1150,27 +1194,41 @@ def end_session(session_id: str):
             (str(brain_session_id), session_id),
         )
 
-    # --- Advance parent workflow past tutor stage ---
+    # --- Parent workflow: End teach vs advance to Polish ---
     try:
-        cur.execute(
-            """UPDATE tutor_workflows
-               SET current_stage = 'polish',
-                   status = 'polish_in_progress',
-                   active_tutor_session_id = NULL,
-                   updated_at = ?
-               WHERE active_tutor_session_id = ?
-                 AND current_stage = 'tutor'
-                 AND status = 'tutor_in_progress'""",
-            (now.isoformat(), session_id),
-        )
-        if cur.rowcount:
-            _LOG.info(
-                "end_session: advanced %d workflow(s) to polish for session %s",
-                cur.rowcount,
-                session_id,
+        if advance_workflow:
+            cur.execute(
+                """UPDATE tutor_workflows
+                   SET current_stage = 'polish',
+                       status = 'polish_in_progress',
+                       active_tutor_session_id = NULL,
+                       updated_at = ?
+                   WHERE active_tutor_session_id = ?
+                     AND current_stage = 'tutor'
+                     AND status = 'tutor_in_progress'""",
+                (now.isoformat(), session_id),
             )
+            if cur.rowcount:
+                _LOG.info(
+                    "end_session: advanced %d workflow(s) to polish for session %s",
+                    cur.rowcount,
+                    session_id,
+                )
+        else:
+            cur.execute(
+                """UPDATE tutor_workflows
+                   SET active_tutor_session_id = NULL,
+                       updated_at = ?
+                   WHERE active_tutor_session_id = ?""",
+                (now.isoformat(), session_id),
+            )
+            if cur.rowcount:
+                _LOG.info(
+                    "end_session: cleared active tutor session for %d workflow(s) (end teach)",
+                    cur.rowcount,
+                )
     except Exception as exc:
-        _LOG.warning("end_session: workflow advancement failed: %s", exc)
+        _LOG.warning("end_session: workflow update failed: %s", exc)
 
     log_product_event(
         conn,

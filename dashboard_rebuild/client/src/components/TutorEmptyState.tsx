@@ -7,6 +7,7 @@ type TutorEmptyStateAction = {
   icon?: LucideIcon;
   onClick: () => void;
   variant?: "primary" | "ghost";
+  testId?: string;
 };
 
 type TutorEmptyStateProps = {
@@ -14,11 +15,21 @@ type TutorEmptyStateProps = {
   title: string;
   description: string;
   actions?: TutorEmptyStateAction[];
+  testId?: string;
 };
 
-export function TutorEmptyState({ icon: Icon, title, description, actions }: TutorEmptyStateProps) {
+export function TutorEmptyState({
+  icon: Icon,
+  title,
+  description,
+  actions,
+  testId = "tutor-empty-state",
+}: TutorEmptyStateProps) {
   return (
-    <div className="flex h-full items-center justify-center p-8">
+    <div
+      data-testid={testId}
+      className="flex h-full items-center justify-center p-8"
+    >
       <Card className="rounded-none border-2 border-primary/20 bg-black/40 max-w-md w-full">
         <CardContent className="flex flex-col items-center gap-4 py-10">
           <Icon className="h-10 w-10 text-primary/60" />
@@ -34,6 +45,7 @@ export function TutorEmptyState({ icon: Icon, title, description, actions }: Tut
                 <Button
                   key={action.label}
                   type="button"
+                  data-testid={action.testId}
                   variant={action.variant === "ghost" ? "ghost" : "default"}
                   className={
                     action.variant === "ghost"

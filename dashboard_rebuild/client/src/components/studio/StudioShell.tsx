@@ -1798,6 +1798,7 @@ export function StudioShell({
                       <button
                         key={`${stage.key}:${definition.panel}`}
                         type="button"
+                        data-testid={`studio-open-panel-${definition.panel}`}
                         aria-label={`Open ${definition.title} panel`}
                         aria-pressed={open}
                         title={definition.title}
@@ -1899,6 +1900,7 @@ export function StudioShell({
                           <button
                             key={preset}
                             type="button"
+                            data-testid={`studio-preset-${preset}`}
                             aria-label={`Apply ${label} preset`}
                             onClick={() => {
                               queuePanelLayoutChange(

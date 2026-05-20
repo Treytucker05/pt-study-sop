@@ -415,7 +415,7 @@ describe("useTutorSession", () => {
           initialRouteQuery: {},
           hub: hub as never,
           tutorChainId: 77,
-          tutorCustomBlockIds: [91, 92],
+          tutorCustomBlockIds: [],
           setTutorChainId,
           setTutorCustomBlockIds,
           activeSessionId: null,
@@ -439,6 +439,8 @@ describe("useTutorSession", () => {
     expect(createSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         method_chain_id: 77,
+        session_kind: "tutor",
+        teach_leg_label: "Cardiovascular regulation",
       }),
     );
     expect(createSessionMock).not.toHaveBeenCalledWith(
@@ -446,8 +448,6 @@ describe("useTutorSession", () => {
         method_chain_id: 5,
       }),
     );
-    expect(setTutorChainId).toHaveBeenCalledWith(77);
-    expect(setTutorCustomBlockIds).toHaveBeenCalledWith([]);
   });
 
   it("forwards Prime Packet context when Tutor starts from the panel path", async () => {

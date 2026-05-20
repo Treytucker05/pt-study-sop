@@ -441,7 +441,10 @@ export function useTutorSession({
   );
 
   // ─── End session ───
-  const endSessionById = useCallback(async (sessionId: string) => {
+  const endSessionById = useCallback(async (
+    sessionId: string,
+    options?: { advanceWorkflow?: boolean },
+  ) => {
     if (sessionId === activeSessionId && stageTimerRunning && stageTimerStartedAt) {
       try {
         await persistStageTimeSlice("session_end", [
@@ -451,7 +454,9 @@ export function useTutorSession({
         toast.error("Failed to persist final tutor study-time slice");
       }
     }
-    const result = await api.tutor.endSession(sessionId);
+    const result = await api.tutor.endSession(sessionId, {
+      advance_workflow: options?.advanceWorkflow ?? true,
+    });
     if (sessionId === activeSessionId) {
       clearTutorActiveSessionId();
       clearActiveSessionState();
@@ -538,17 +543,35 @@ export function useTutorSession({
         return null;
       }
       if (!preflightPayload) {
-        toast.error("Select a course, objective scope, and materials before starting the Tutor.");
+        toast.error("Select a course, objective scope, and materials before starting Tutor teach.");
+        return null;
+      }
+      const teachLabel = String(preflightPayload.topic || hub.effectiveTopic || "").trim();
+      if (teachLabel.length < 2) {
+        toast.error("Enter a teach leg topic label before Start Tutor.");
+        return null;
+      }
+      const materialIds = preflightPayload.content_filter?.material_ids || [];
+      if (materialIds.length === 0) {
+        toast.error("Select at least one study material before Start Tutor.");
+        return null;
+      }
+      if (tutorCustomBlockIds.length > 1) {
+        toast.error("Custom teach allows exactly one method block.");
         return null;
       }
       let resolvedChainId = tutorChainId;
-      if (!resolvedChainId && tutorCustomBlockIds.length > 0) {
+      if (!resolvedChainId && tutorCustomBlockIds.length === 1) {
         const customChain = await api.tutor.createCustomChain(
           tutorCustomBlockIds,
-          `Custom ${hub.effectiveTopic || "Chain"}`,
+          `Custom ${teachLabel}`,
         );
         resolvedChainId = customChain.id;
         setTutorChainId(customChain.id);
+      }
+      if (!resolvedChainId) {
+        toast.error("Choose a template chain or one custom method before Start Tutor.");
+        return null;
       }
       const contentFilter = {
         ...preflightPayload.content_filter,
@@ -559,7 +582,9 @@ export function useTutorSession({
 
       const session = await api.tutor.createSession({
         course_id: preflightPayload.course_id,
-        topic: preflightPayload.topic,
+        topic: teachLabel,
+        teach_leg_label: teachLabel,
+        session_kind: "tutor",
         module_name: preflightPayload.module_name,
         objective_scope: preflightPayload.objective_scope,
         focus_objective_id: preflightPayload.focus_objective_id,
@@ -599,6 +624,30 @@ export function useTutorSession({
     tutorChainId,
     tutorCustomBlockIds,
   ]);
+
+  const startGeneralSession = useCallback(async () => {
+    setIsStarting(true);
+    try {
+      const created = await api.tutor.createSession({
+        mode: "Core",
+        topic: "General Q&A",
+        session_kind: "general",
+      });
+      const full = await api.tutor.getSession(created.session_id);
+      applySessionState(full);
+      setShowSetup(false);
+      toast.success("General Q&A ready");
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      return full;
+    } catch (err) {
+      toast.error(
+        `Failed to start General Q&A: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
+      return null;
+    } finally {
+      setIsStarting(false);
+    }
+  }, [applySessionState, queryClient, setShowSetup]);
 
   // ─── Resume session ───
   const resumeSession = useCallback(
@@ -987,6 +1036,7 @@ export function useTutorSession({
     endSession,
     shipToBrainAndEnd,
     startSession,
+    startGeneralSession,
     resumeSession,
     handleArtifactCreated,
     handleStudioCapture,

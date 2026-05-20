@@ -992,6 +992,8 @@ export interface TutorSessionPreflightRequest {
     focus_objective_id?: string;
     vault_folder?: string;
     memory_capsule_context?: string;
+    session_kind?: "general" | "tutor";
+    teach_leg_label?: string;
     force_full_docs?: boolean;
     default_mode?: {
       materials?: boolean;
@@ -1087,6 +1089,8 @@ export interface TutorCreateSessionRequest {
     };
   };
   method_chain_id?: number;
+  session_kind?: "general" | "tutor";
+  teach_leg_label?: string;
   packet_context?: string;
   memory_capsule_context?: string;
 }

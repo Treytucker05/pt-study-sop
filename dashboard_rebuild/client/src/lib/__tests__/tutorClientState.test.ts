@@ -136,6 +136,7 @@ describe("tutorClientState", () => {
         title: "Review ankle mechanics",
         reason: "Due today",
       },
+      courseSetupPrimingHandoff: null,
     });
     expect(sessionStorage.getItem(TUTOR_LIBRARY_HANDOFF_KEY)).toBeNull();
     expect(sessionStorage.getItem(TUTOR_BRAIN_HANDOFF_KEY)).toBeNull();

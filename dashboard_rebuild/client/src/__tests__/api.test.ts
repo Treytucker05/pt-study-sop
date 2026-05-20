@@ -642,12 +642,15 @@ describe("api.tutor", () => {
     );
   });
 
-  it("endSession sends POST", async () => {
+  it("endSession sends POST with advance_workflow body", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ ended: true }));
-    await api.tutor.endSession("tutor-123");
+    await api.tutor.endSession("tutor-123", { advance_workflow: false });
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/tutor/session/tutor-123/end",
-      expect.objectContaining({ method: "POST" })
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ advance_workflow: false }),
+      }),
     );
   });
 

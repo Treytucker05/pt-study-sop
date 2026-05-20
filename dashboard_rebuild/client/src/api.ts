@@ -957,10 +957,21 @@ export const api = {
           body: JSON.stringify(data),
         },
       ),
-    endSession: (sessionId: string) =>
+    endSession: (
+      sessionId: string,
+      options?: { advance_workflow?: boolean },
+    ) =>
       request<TutorSessionEndResult>(`/tutor/session/${sessionId}/end`, {
         method: "POST",
+        body: JSON.stringify({
+          advance_workflow: options?.advance_workflow ?? true,
+        }),
       }),
+    finishStudyRun: (workflowId: string) =>
+      request<{ workflow: TutorWorkflowListResponse["items"][number] }>(
+        `/tutor/workflows/${workflowId}/finish`,
+        { method: "POST" },
+      ),
     resumeSession: (sessionId: string) =>
       request<{
         session_id: string;

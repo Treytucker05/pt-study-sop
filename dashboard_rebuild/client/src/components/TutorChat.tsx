@@ -732,6 +732,9 @@ export function TutorChat({
       (material.file_type === "mp4" ||
         material.source_path?.toLowerCase().endsWith(".mp4")),
   ).length;
+  const sessionKind = sessionContext?.sessionSnapshot?.content_filter?.session_kind;
+  const defaultTurnMode = sessionKind === "general" ? "general" : "tutor";
+  const hasTeachChain = Boolean(sessionContext?.sessionSnapshot?.method_chain_id);
 
   const {
     messages,
@@ -767,6 +770,7 @@ export function TutorChat({
     webSearchOn: chatState.webSearchOn,
     deepThinkOn: chatState.deepThinkOn,
     geminiVisionOn: chatState.geminiVisionOn,
+    turnMode: defaultTurnMode,
   });
 
   const abortStream = useCallback(() => {
@@ -1003,6 +1007,21 @@ export function TutorChat({
             speedTierRow={<TutorSpeedTierRow controls={speedTiers} />}
           />
 
+          {hasTeachChain ? (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isStreaming || !input.trim()}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary/70"
+                onClick={() => sendMessage("general")}
+              >
+                Send as General Q&A
+              </Button>
+            </div>
+          ) : null}
+
           <TutorInputComposer
             input={input}
             isStreaming={isStreaming}
@@ -1010,7 +1029,7 @@ export function TutorChat({
             dictation={dictation}
             onInputChange={setInput}
             onKeyDown={handleKeyDown}
-            onSend={sendMessage}
+            onSend={() => sendMessage()}
             onAbort={abortStream}
           />
         </div>

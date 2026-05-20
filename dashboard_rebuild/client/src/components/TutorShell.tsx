@@ -1131,7 +1131,7 @@ export function TutorShell({
     if (tutorCustomBlockIds.length > 0) {
       return "custom";
     }
-    return "auto";
+    return "";
   }, [tutorChainId, tutorCustomBlockIds.length]);
   const applyCanvasPreset = useCallback(
     (preset: "priming" | "study" | "polish" | "full_studio" | "minimal") => {
@@ -1749,11 +1749,6 @@ export function TutorShell({
                 value={tutorChainSelectValue}
                 onChange={(event) => {
                   const value = event.target.value;
-                  if (value === "auto") {
-                    setTutorChainId?.(undefined);
-                    setTutorCustomBlockIds?.([]);
-                    return;
-                  }
                   if (value === "custom") {
                     setTutorChainId?.(undefined);
                     return;
@@ -1767,7 +1762,7 @@ export function TutorShell({
                 disabled={templateChainsLoading}
                 className="h-10 rounded-[var(--ds-r-085)] border border-[var(--ds-accent-a16)] bg-black/35 px-3 font-mono text-sm text-white outline-none"
               >
-                <option value="auto">Auto tutor flow</option>
+                <option value="">Select a chain template</option>
                 {templateChains.map((chain) => (
                   <option key={chain.id} value={`template:${chain.id}`}>
                     {readTemplateChainLabel(chain)}
@@ -1795,6 +1790,10 @@ export function TutorShell({
                 : {}),
             },
           );
+        }}
+        onStartGeneralSession={() => {
+          applyCanvasPreset("study");
+          void session.startGeneralSession();
         }}
         activeMemoryCapsuleContext={activeMemoryCapsuleContext}
         sessionRules={activeTutorSessionRules}

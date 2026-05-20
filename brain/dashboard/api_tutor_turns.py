@@ -867,6 +867,8 @@ def send_turn(session_id: str):
         _question_within_reference_targets,
     )
 
+    from dashboard.api_tutor_utils import _normalize_turn_mode
+
     data = request.get_json(silent=True) or {}
     question = data.get("message", "").strip()
     behavior_override = data.get("behavior_override")
@@ -883,6 +885,19 @@ def send_turn(session_id: str):
     if session["status"] != "active":
         conn.close()
         return jsonify({"error": "Session is not active"}), 400
+
+    interaction_mode = _normalize_turn_mode(data.get("turn_mode"), session)
+    if interaction_mode == "tutor" and not session.get("method_chain_id"):
+        conn.close()
+        return (
+            jsonify(
+                {
+                    "error": "Tutor teach turns require a teach session with a method chain.",
+                    "code": "TUTOR_TURN_REQUIRES_TEACH_SESSION",
+                }
+            ),
+            400,
+        )
 
     # Load previous turns for chat history
     turns = _get_session_turns(conn, session_id, limit=20)
@@ -2280,8 +2295,8 @@ def send_turn(session_id: str):
                    (session_id, tutor_session_id, course_id, turn_number,
                     question, answer, citations_json, response_id, model_id,
                     phase, artifacts_json, behavior_override, evaluation_json,
-                    strategy_snapshot_json, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    strategy_snapshot_json, interaction_mode, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     session_id,
@@ -2297,6 +2312,7 @@ def send_turn(session_id: str):
                     behavior_override,
                     json.dumps(parsed_verdict) if parsed_verdict else None,
                     json.dumps(scholar_strategy) if scholar_strategy else None,
+                    interaction_mode,
                     now,
                 ),
             )
