@@ -25,11 +25,13 @@ Stable hooks for dogfooding slice #161 and later Tutor UI work.
 | `tutor-hero-finish-study-run` | Hero: close study run (workflow) |
 | `tutor-hero-new-session` | Hero: open entry / new setup |
 
-## One-command dogfood
+## One-command E2E
 
 ```bash
 ./scripts/tutor-browser-dogfood.sh
 ```
+
+Covers: empty state → **GENERAL Q&A** → chat → hero **END TEACH** → empty state again. Stubs `window.confirm`, polls up to ~20s per step, re-opens the Tutor panel after End teach.
 
 Override URL/session:
 
