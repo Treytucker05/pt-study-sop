@@ -1,5 +1,7 @@
 # Neural Command Deck — UI Primitives
 
+Canonical runtime architecture: **CP-MSS** (Control Plane) in `sop/library/17-control-plane.md`.
+
 Reference for the shared primitives in `dashboard_rebuild/client/src/components/ui/`.
 Authoritative tokens live in `../../index.css` and `../../lib/theme.ts` (see
 [`/DESIGN.md`](../../../../../DESIGN.md)). This document is descriptive — code wins on conflict.
