@@ -899,7 +899,10 @@ def send_turn(session_id: str):
             400,
         )
 
-    # Load previous turns for chat history
+    # Load previous turns for chat history (summary + recency tail when compacted)
+    from dashboard.api_tutor_memory import build_prompt_turn_history
+
+    prompt_history, working_summary_meta = build_prompt_turn_history(conn, session_id)
     turns = _get_session_turns(conn, session_id, limit=20)
 
     # Build chain/block context if method chain is active
@@ -1602,16 +1605,33 @@ def send_turn(session_id: str):
                 pass  # Best-effort
 
             # Build user prompt: chat history + question
-            recent_turns = turns[-12:] if len(turns) > 12 else turns
             history_lines: list[str] = []
-            for t in recent_turns:
-                if t.get("question"):
-                    history_lines.append(f"User: {t['question']}")
-                if t.get("answer"):
-                    ans = t["answer"]
-                    if len(ans) > 800:
-                        ans = ans[:800] + "..."
-                    history_lines.append(f"Assistant: {ans}")
+            if working_summary_meta:
+                history_lines.append(
+                    "System: Working summary for this teach leg:\n"
+                    f"{working_summary_meta.get('summary_text') or ''}"
+                )
+            for message in prompt_history:
+                role = str(message.get("role") or "").strip().lower()
+                content = str(message.get("content") or "").strip()
+                if not content or role == "system":
+                    continue
+                if role == "user":
+                    history_lines.append(f"User: {content}")
+                elif role == "assistant":
+                    if len(content) > 800:
+                        content = content[:800] + "..."
+                    history_lines.append(f"Assistant: {content}")
+            if not history_lines:
+                recent_turns = turns[-12:] if len(turns) > 12 else turns
+                for t in recent_turns:
+                    if t.get("question"):
+                        history_lines.append(f"User: {t['question']}")
+                    if t.get("answer"):
+                        ans = t["answer"]
+                        if len(ans) > 800:
+                            ans = ans[:800] + "..."
+                        history_lines.append(f"Assistant: {ans}")
             history_text = "\n".join(history_lines).strip() or "(no prior turns)"
 
             directive = get_directive(behavior_override)

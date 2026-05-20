@@ -585,6 +585,7 @@ export function useTutorSession({
         topic: teachLabel,
         teach_leg_label: teachLabel,
         session_kind: "tutor",
+        ...(activeWorkflowId ? { workflow_id: activeWorkflowId } : {}),
         module_name: preflightPayload.module_name,
         objective_scope: preflightPayload.objective_scope,
         focus_objective_id: preflightPayload.focus_objective_id,
@@ -623,6 +624,7 @@ export function useTutorSession({
     setTutorChainId,
     tutorChainId,
     tutorCustomBlockIds,
+    activeWorkflowId,
   ]);
 
   const startGeneralSession = useCallback(async () => {

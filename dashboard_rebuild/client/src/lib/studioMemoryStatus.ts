@@ -29,6 +29,13 @@ export interface StudioMemoryStatusModel {
   latestCapsule: StudioMemoryHistoryEntry | null;
   history: StudioMemoryHistoryEntry[];
   compactionState: StudioTutorContextHealth;
+  workingSummary: StudioWorkingSummaryStatus | null;
+}
+
+export interface StudioWorkingSummaryStatus {
+  versionLabel: string;
+  summary: string;
+  createdAtLabel: string;
 }
 
 export interface BuildStudioMemoryStatusInput {
@@ -37,6 +44,7 @@ export interface BuildStudioMemoryStatusInput {
   latestAssistantContent?: string | null;
   stageTimerDisplaySeconds: number;
   compactionTelemetry?: Record<string, unknown> | null;
+  workingSummary?: StudioWorkingSummaryStatus | null;
 }
 
 function normalizePositiveInteger(value: unknown): number | null {
@@ -74,7 +82,7 @@ function getTelemetryContextHealth(
   if (pressureLevel === "high") {
     return {
       level: "critical",
-      label: "Compaction soon",
+      label: "Context pressure high",
       detail,
     };
   }
@@ -146,6 +154,7 @@ export function buildStudioMemoryStatus({
   latestAssistantContent,
   stageTimerDisplaySeconds,
   compactionTelemetry,
+  workingSummary = null,
 }: BuildStudioMemoryStatusInput): StudioMemoryStatusModel {
   const sortedCapsules = [...memoryCapsules].sort((left, right) => {
     if (right.capsule_version !== left.capsule_version) {
@@ -166,5 +175,6 @@ export function buildStudioMemoryStatus({
       stageTimerDisplaySeconds,
       compactionTelemetry,
     }),
+    workingSummary,
   };
 }

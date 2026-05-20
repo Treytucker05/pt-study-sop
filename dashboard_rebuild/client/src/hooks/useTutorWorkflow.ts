@@ -1676,15 +1676,39 @@ export function useTutorWorkflow({
   ]);
 
   const quickCompactWorkflowMemory = useCallback(async () => {
-    const summary = session.latestCommittedAssistantMessage?.content?.trim() || memorySummaryText.trim();
-    if (!summary) {
-      toast.error("No completed assistant reply is available to compact yet.");
+    if (!activeSessionId) {
+      toast.error("Start Tutor before updating the working summary.");
       return null;
     }
-    return createWorkflowMemoryCapsule({
-      summaryOverride: summary,
-    });
-  }, [createWorkflowMemoryCapsule, session.latestCommittedAssistantMessage, memorySummaryText]);
+    setSavingRuntimeEvent(true);
+    try {
+      const result = await api.tutor.compactSession(activeSessionId, {
+        trigger_source: "manual",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["tutor-teach-legs", activeWorkflowId],
+      });
+      if (activeWorkflowId) {
+        await queryClient.invalidateQueries({
+          queryKey: ["tutor-workflow-detail", activeWorkflowId],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["tutor-polish-drafts", activeWorkflowId],
+        });
+      }
+      toast.success(
+        `Working summary v${result.working_summary.version} saved`,
+      );
+      return result.working_summary;
+    } catch (err) {
+      toast.error(
+        `Failed to update working summary: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
+      return null;
+    } finally {
+      setSavingRuntimeEvent(false);
+    }
+  }, [activeSessionId, activeWorkflowId, queryClient]);
 
   return {
     activeWorkflowId,

@@ -37,7 +37,7 @@ describe("getStudioTutorContextHealth", () => {
       }),
     ).toMatchObject({
       level: "critical",
-      label: "Compaction soon",
+      label: "Context pressure high",
       detail: "Using 15,600 / 24,000 tokens of live context.",
     });
   });

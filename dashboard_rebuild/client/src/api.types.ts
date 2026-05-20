@@ -1089,6 +1089,7 @@ export interface TutorCreateSessionRequest {
     };
   };
   method_chain_id?: number;
+  workflow_id?: string;
   session_kind?: "general" | "tutor";
   teach_leg_label?: string;
   packet_context?: string;
@@ -2017,6 +2018,58 @@ export interface TutorWorkflowDetailResponse {
   memory_capsules: TutorMemoryCapsule[];
   polish_bundle: TutorPolishBundle | null;
   publish_results: TutorPublishResult[];
+}
+
+export interface TutorTeachLeg {
+  session_id: string;
+  teach_leg_label: string;
+  topic?: string | null;
+  status?: string | null;
+  turn_count?: number;
+  started_at?: string | null;
+  ended_at?: string | null;
+  is_active?: boolean;
+}
+
+export interface TutorTeachLegsResponse {
+  workflow_id: string;
+  teach_legs: TutorTeachLeg[];
+  count: number;
+}
+
+export interface TutorWorkingSummary {
+  id: number;
+  tutor_session_id: string;
+  version: number;
+  summary_text: string;
+  trigger_source?: string;
+  created_at: string;
+}
+
+export interface TutorCompactSessionResponse {
+  session_id: string;
+  working_summary: TutorWorkingSummary;
+  tutor_turn_count: number;
+  transcript_turn_count: number;
+  polish_draft?: TutorPolishDraft | null;
+}
+
+export interface TutorPolishDraft {
+  id: number;
+  workflow_id: string;
+  tutor_session_id?: string | null;
+  teach_leg_label?: string | null;
+  kind: "checkpoint" | "final" | string;
+  status: string;
+  content?: { markdown?: string };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TutorPolishDraftsResponse {
+  workflow_id: string;
+  drafts: TutorPolishDraft[];
+  count: number;
 }
 
 export interface TutorStudioOverviewCardDraft {

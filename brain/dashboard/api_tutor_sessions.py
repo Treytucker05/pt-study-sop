@@ -634,9 +634,16 @@ def create_session():
 
     session_id = _gen_session_id()
     now = datetime.now().isoformat()
+    workflow_id = str(data.get("workflow_id") or "").strip() or None
 
     conn = get_connection()
     _ensure_selector_columns(conn)
+    try:
+        from dashboard.api_tutor_memory import _ensure_tutor_memory_schema
+
+        _ensure_tutor_memory_schema(conn)
+    except Exception:
+        pass
     session_kind = str(data.get("session_kind") or "").strip().lower()
     explicit_teach_leg_label = str(data.get("teach_leg_label") or "").strip()
     teach_leg_label = explicit_teach_leg_label or str(topic or "").strip()
@@ -699,8 +706,8 @@ def create_session():
            (session_id, brain_session_id, brain_profile_snapshot_id, course_id, phase, topic, content_filter_json,
             scholar_strategy_json, status, turn_count, method_chain_id, current_block_index, started_at,
             selector_chain_id, selector_score_json, selector_policy_version,
-            selector_dependency_fix)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
+            selector_dependency_fix, workflow_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?, ?)""",
         (
             session_id,
             linked_brain_session_id,
@@ -716,8 +723,23 @@ def create_session():
             selector_meta.get("selector_score_json"),
             selector_meta.get("selector_policy_version"),
             selector_meta.get("selector_dependency_fix"),
+            workflow_id,
         ),
     )
+
+    if workflow_id and isinstance(content_filter, dict) and content_filter.get("session_kind") == "tutor":
+        try:
+            cur.execute(
+                """UPDATE tutor_workflows
+                   SET active_tutor_session_id = ?,
+                       current_stage = 'tutor',
+                       status = 'tutor_in_progress',
+                       updated_at = ?
+                   WHERE workflow_id = ?""",
+                (session_id, now, workflow_id),
+            )
+        except Exception as exc:
+            _LOG.warning("create_session: workflow link failed: %s", exc)
 
     first_block_name = None
     greeting = None
@@ -1229,6 +1251,17 @@ def end_session(session_id: str):
                 )
     except Exception as exc:
         _LOG.warning("end_session: workflow update failed: %s", exc)
+
+    try:
+        from dashboard.api_tutor_memory import on_teach_session_end
+
+        on_teach_session_end(
+            conn,
+            session_id,
+            workflow_id=str(session.get("workflow_id") or "").strip() or None,
+        )
+    except Exception as exc:
+        _LOG.warning("end_session: polish draft hook failed: %s", exc)
 
     log_product_event(
         conn,

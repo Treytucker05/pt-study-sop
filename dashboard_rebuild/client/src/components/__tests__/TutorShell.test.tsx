@@ -3480,7 +3480,7 @@ describe("TutorShell studio routing", () => {
 
     expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /start session/i }));
+    await user.click(screen.getByTestId("tutor-start-teach"));
 
     expect(startSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -3546,7 +3546,7 @@ describe("TutorShell studio routing", () => {
 
     expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /start session/i }));
+    await user.click(screen.getByTestId("tutor-start-teach"));
 
     expect(startSession).toHaveBeenCalledWith(
       expect.objectContaining({

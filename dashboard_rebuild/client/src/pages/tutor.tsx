@@ -2,6 +2,7 @@ import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
 import { useCanvasLocked } from "@/lib/canvasLock";
 import { TutorShell } from "@/components/TutorShell";
+import { TutorTeachLegList } from "@/components/tutor-shell/TutorTeachLegList";
 import { TutorTopBar } from "@/components/TutorTopBar";
 import { HudButton } from "@/components/ui/HudButton";
 import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
@@ -1290,6 +1291,17 @@ function useTutorPageController() {
       contentClassName="gap-6"
       heroClassName="tutor-page-hero"
       stats={tutorHeroStats}
+      heroFooter={
+        workflow.activeWorkflowId ? (
+          <TutorTeachLegList
+            workflowId={workflow.activeWorkflowId}
+            activeSessionId={liveTutorSessionId}
+            onSelectLeg={(sessionId) => {
+              void session.resumeSession(sessionId);
+            }}
+          />
+        ) : null
+      }
       actions={
         <>
           {liveTutorSessionId ? (

@@ -36,6 +36,7 @@ import type {
   TutorCreateSessionRequest,
   TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
   TutorWorkflowCreateRequest, TutorWorkflowDeleteResponse, TutorWorkflowDetailResponse, TutorWorkflowListResponse,
+  TutorTeachLegsResponse, TutorCompactSessionResponse, TutorPolishDraftsResponse,
   TutorPrimingAssistRequest, TutorPrimingAssistResponse, TutorPrimingBundle, TutorPrimingBundleRequest, TutorCapturedNote,
   TutorPrimingRefinementRequest, TutorPrimingRefinementResponse,
   TutorCapturedNoteRequest, TutorFeedbackEvent, TutorFeedbackEventRequest,
@@ -970,6 +971,25 @@ export const api = {
     finishStudyRun: (workflowId: string) =>
       request<{ workflow: TutorWorkflowListResponse["items"][number] }>(
         `/tutor/workflows/${workflowId}/finish`,
+        { method: "POST" },
+      ),
+    listTeachLegs: (workflowId: string) =>
+      request<TutorTeachLegsResponse>(`/tutor/workflows/${workflowId}/teach-legs`),
+    compactSession: (
+      sessionId: string,
+      options?: { trigger_source?: string },
+    ) =>
+      request<TutorCompactSessionResponse>(`/tutor/session/${sessionId}/compact`, {
+        method: "POST",
+        body: JSON.stringify({
+          trigger_source: options?.trigger_source ?? "manual",
+        }),
+      }),
+    listPolishDrafts: (workflowId: string) =>
+      request<TutorPolishDraftsResponse>(`/tutor/workflows/${workflowId}/polish-drafts`),
+    approvePolishDraft: (workflowId: string, draftId: number) =>
+      request<{ draft_id: number; status: string; note_id: number }>(
+        `/tutor/workflows/${workflowId}/polish-drafts/${draftId}/approve`,
         { method: "POST" },
       ),
     resumeSession: (sessionId: string) =>
