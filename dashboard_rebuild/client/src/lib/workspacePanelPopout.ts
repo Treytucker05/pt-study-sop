@@ -92,7 +92,7 @@ export function openPanelPopoutWindow(
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-      background: #0a0a0f;
+      background: #08080c;
       color: #e0e0e0;
       overflow: hidden;
       height: 100vh;
@@ -104,7 +104,7 @@ export function openPanelPopoutWindow(
       align-items: center;
       justify-content: space-between;
       padding: 8px 12px;
-      background: rgba(15, 15, 25, 0.95);
+      background: rgba(18,18,28,0.95);
       border-bottom: 1px solid rgba(120, 200, 255, 0.15);
       flex-shrink: 0;
     }

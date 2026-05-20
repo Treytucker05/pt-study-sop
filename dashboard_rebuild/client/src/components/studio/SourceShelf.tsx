@@ -11,16 +11,21 @@ import {
   ChevronRight,
   ExternalLink,
   Folder,
+  FolderSync,
   FolderTree,
+  Loader2,
   Plus,
   Search,
   Upload,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { Material } from "@/lib/api";
+import { materialFolderSegments } from "@/lib/materialFolder";
 import { basenameFromPath as sharedBasenameFromPath, splitPath as sharedSplitPath } from "@/lib/pathDisplay";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
@@ -484,24 +489,51 @@ function buildSourceTree(args: {
         return next;
       })();
 
-    const libraryFolder = ensureFolder(
-      courseFolder.children,
-      `${courseFolder.id}:library`,
-      "Library",
-      "source",
-    );
-
     const workspaceObject = createMaterialWorkspaceObject(material);
-    libraryFolder.children.push({
+    const leaf: SourceLeafNode = {
       id: workspaceObject.id,
       kind: "leaf",
       sourceType: "material",
-      label: workspaceObject.title,
+      // Show only the file's basename, never a full filesystem path, even
+      // when the material title is itself an absolute path (real data).
+      label: basenameFromPath(workspaceObject.title),
       detail: basenameFromPath(workspaceObject.detail),
       badge: workspaceObject.badge,
       checked: selectedMaterialIdSet.has(material.id),
       workspaceObject,
+    };
+
+    // Nest the material by its real folder hierarchy (folder_path /
+    // sanitized source_path) instead of one flat "Library" bucket — this
+    // is the disconnect: synced materials already carry folder_path.
+    const rawSegments = materialFolderSegments(material);
+    const startsWithCourse =
+      rawSegments.length > 0 &&
+      normalizeKey(rawSegments[0]) === normalizeKey(courseLabel);
+    const segments = startsWithCourse ? rawSegments.slice(1) : rawSegments;
+
+    if (segments.length === 0) {
+      // Unfoldered (e.g. uploaded files) — small bucket, not a giant catch-all.
+      ensureFolder(
+        courseFolder.children,
+        `${courseFolder.id}:unsorted`,
+        "Unsorted",
+        "source",
+      ).children.push(leaf);
+      return;
+    }
+
+    let parentFolder = courseFolder;
+    segments.forEach((segment, index) => {
+      const segmentKey = normalizeKey(segment) || `segment-${index}`;
+      parentFolder = ensureFolder(
+        parentFolder.children,
+        `${parentFolder.id}:m:${segmentKey}`,
+        segment,
+        "path",
+      );
     });
+    parentFolder.children.push(leaf);
   });
 
   knownVaultPaths.forEach((path) => {
@@ -643,7 +675,7 @@ function SourceShelfTreeNode({
 
     return (
       <div
-        className="rounded-md border border-primary/12 bg-black/15 px-2 py-1.5"
+        className="rounded-md border border-white/[0.08] bg-black/15 px-2 py-1.5"
         style={{ marginLeft: `${depth * 10}px` }}
       >
         <div className="flex items-center gap-2">
@@ -663,14 +695,14 @@ function SourceShelfTreeNode({
               </span>
               <Badge
                 variant="outline"
-                className="shrink-0 rounded-full border-primary/20 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-primary"
+                className="shrink-0 rounded-full border-white/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-zinc-400"
               >
                 {node.badge}
               </Badge>
               {node.sourceType === "vault" ? (
                 <Badge
                   variant="outline"
-                  className="shrink-0 rounded-full border-primary/12 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/75"
+                  className="shrink-0 rounded-full border-white/[0.08] px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wider text-zinc-500"
                 >
                   Vault
                 </Badge>
@@ -678,7 +710,7 @@ function SourceShelfTreeNode({
             </div>
             {shouldShowDetail ? (
               <div
-                className="truncate text-[11px] text-foreground/60"
+                className="truncate text-[11px] text-zinc-500"
                 title={node.workspaceObject.detail}
               >
                 {node.detail}
@@ -692,7 +724,7 @@ function SourceShelfTreeNode({
               onClick={() => onOpenInDocumentDock?.(node.workspaceObject)}
               aria-label={`Open ${node.label} in Document Dock`}
               title="Open in Document Dock"
-              className="h-6 w-6 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white"
+              className="h-6 w-6 rounded-full border-white/10 bg-black/20 p-0 text-zinc-200 hover:bg-black/30 hover:text-white"
             >
               <ExternalLink className="h-3 w-3" />
             </Button>
@@ -710,7 +742,7 @@ function SourceShelfTreeNode({
                 title={
                   isInWorkspace ? "Already in workspace" : "Add to workspace"
                 }
-                className="h-6 w-6 rounded-full border-primary/18 bg-black/20 p-0 text-white/82 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-foreground/82"
+                className="h-6 w-6 rounded-full border-white/10 bg-black/20 p-0 text-zinc-200 hover:bg-black/30 hover:text-white disabled:cursor-default disabled:opacity-100 disabled:text-zinc-300"
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -729,7 +761,7 @@ function SourceShelfTreeNode({
 
   return (
     <div className="space-y-1" style={{ marginLeft: `${depth * 10}px` }}>
-      <div className="flex items-center gap-2 border-l border-primary/20 py-0.5 pl-2">
+      <div className="flex items-center gap-2 border-l border-white/10 py-0.5 pl-2">
         <TreeCheckbox
           checked={allChecked}
           indeterminate={partiallyChecked}
@@ -744,19 +776,19 @@ function SourceShelfTreeNode({
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-sm bg-transparent px-1 py-0.5 text-left transition-colors hover:bg-white/5"
         >
           {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           )}
           {node.folderType === "course" ? (
-            <FolderTree className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <FolderTree className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           ) : (
-            <Folder className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+            <Folder className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
           )}
           <span className="min-w-0 flex-1 truncate text-sm text-white">
             {node.label}
           </span>
-          <span className="shrink-0 text-[10px] text-foreground/70">
+          <span className="shrink-0 text-[11px] text-zinc-400">
             {checkedLeafCount}/{leafNodes.length} loaded
           </span>
         </button>
@@ -785,6 +817,34 @@ function SourceShelfTreeNode({
   );
 }
 
+/**
+ * Poll a Root-Folder sync job to completion. The in-place sync re-indexes
+ * the configured Root Folder by folder structure WITHOUT re-uploading each
+ * file (that is the Root-Folder ↔ Uploaded-Files reconciliation the user
+ * asked for). Mirrors library.tsx waitForMaterialSyncJob.
+ */
+async function waitForSourceSyncJob(
+  jobId: string,
+  onProgress?: (
+    status: Awaited<ReturnType<typeof api.tutor.getSyncMaterialsStatus>>,
+  ) => void,
+) {
+  let lastStatus: Awaited<
+    ReturnType<typeof api.tutor.getSyncMaterialsStatus>
+  > | null = null;
+  // 112 files + embeddings can run for several minutes; cap generously
+  // (~10 min) and surface progress so the tree can fill in live.
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    lastStatus = await api.tutor.getSyncMaterialsStatus(jobId);
+    onProgress?.(lastStatus);
+    if (lastStatus.status === "completed" || lastStatus.status === "failed") {
+      return lastStatus;
+    }
+  }
+  return lastStatus;
+}
+
 export function SourceShelf({
   courseId,
   courseName,
@@ -805,6 +865,22 @@ export function SourceShelf({
   onOpenInDocumentDock,
 }: SourceShelfProps) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
+  // Resolve the configured Root Folder (TUTOR_MATERIALS_DIR /
+  // PT_SCHOOL_MATERIALS_DIR / brain/.env) so the user can SEE exactly
+  // which folder a sync will read, and so we pass it explicitly rather
+  // than relying on a silent server-side env fallback.
+  const { data: rootFolderPreview, error: rootFolderError } = useQuery({
+    queryKey: ["studio-root-folder-preview"],
+    queryFn: () => api.tutor.previewSyncMaterialsFolder({}),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const resolvedRootFolder = rootFolderPreview?.folder ?? null;
+  const rootFolderFileCount = rootFolderPreview?.counts?.files ?? null;
+  const rootFolderErrorMessage =
+    rootFolderError instanceof Error ? rootFolderError.message : null;
   const [activeFilter, setActiveFilter] = useState<SourceShelfFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [listedVaultPaths, setListedVaultPaths] = useState<string[]>([]);
@@ -876,10 +952,10 @@ export function SourceShelf({
       selectedPaths,
     ],
   );
-  const defaultExpandedIds = useMemo(
-    () => collectDefaultExpandedNodeIds(fullTree),
-    [fullTree],
-  );
+  // Source Shelf opens with every folder collapsed (user preference). The
+  // re-add effect below then becomes a no-op, so manual expand/collapse
+  // persists across tree rebuilds instead of being forced back open.
+  const defaultExpandedIds = useMemo<string[]>(() => [], []);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set(defaultExpandedIds),
   );
@@ -980,6 +1056,78 @@ export function SourceShelf({
     }
   };
 
+  const invalidateMaterialQueries = () =>
+    Promise.all(
+      [
+        "tutor-materials",
+        "tutor-chat-materials-all-enabled",
+        "tutor-content-sources",
+        "tutor-embed-status",
+      ].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
+    );
+
+  // Reconcile the WHOLE configured Root Folder into Library in place — no
+  // re-upload. course_id is intentionally NOT pinned to the open course:
+  // the root spans many classes, so the backend must auto-link each file
+  // to its own course by folder name (it only does so when course_id is
+  // null — passing a course force-assigns every file to that one class,
+  // which is the disconnect that collapsed everything into one course).
+  const handleSyncRootFolder = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    const pending = toast.loading("Syncing Root Folder…");
+    try {
+      const start = await api.tutor.startSyncMaterialsFolder({
+        // Explicit folder beats the server env fallback so the sync
+        // provably targets the folder shown in the UI.
+        folder_path: resolvedRootFolder || undefined,
+        // null => backend auto-links each file to its class by folder.
+        course_id: null,
+      });
+      // Long job (extract + embed across the whole root). Refresh the
+      // tree periodically so classes appear as they stream in, not only
+      // at the very end.
+      let tick = 0;
+      const status = start.job_id
+        ? await waitForSourceSyncJob(start.job_id, () => {
+            tick += 1;
+            if (tick % 5 === 0) void invalidateMaterialQueries();
+          })
+        : null;
+      if (status?.status === "failed") {
+        throw new Error(status.last_error || "Root Folder sync failed.");
+      }
+      await invalidateMaterialQueries();
+      const processed = Number(status?.sync_result?.processed || 0);
+      if (status && status.status !== "completed") {
+        toast.message(
+          `Root Folder sync still running (${processed} file${
+            processed === 1 ? "" : "s"
+          } so far). Classes will keep filling in.`,
+          { id: pending },
+        );
+      } else {
+        toast.success(
+          processed > 0
+            ? `Synced ${processed} file${
+                processed === 1 ? "" : "s"
+              } from the Root Folder across their classes.`
+            : "Root Folder is already in sync.",
+          { id: pending },
+        );
+      }
+    } catch (err) {
+      toast.error(
+        `Root Folder sync failed: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`,
+        { id: pending },
+      );
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
       return;
@@ -995,9 +1143,9 @@ export function SourceShelf({
   return (
     <div
       data-testid="source-shelf-content"
-      className="flex h-full min-h-0 flex-col gap-4 font-mono text-sm text-foreground/82"
+      className="flex h-full min-h-0 flex-col gap-4 text-[13px] text-zinc-300"
     >
-      <div className="space-y-3 rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
+      <div className="space-y-3 rounded-lg border border-white/[0.06] bg-zinc-950/40 p-3">
         <div className="flex flex-wrap gap-2">
           {SOURCE_FILTERS.map(([filterId, label]) => {
             const isActive = activeFilter === filterId;
@@ -1010,8 +1158,8 @@ export function SourceShelf({
                 aria-pressed={isActive}
                 className={
                   isActive
-                    ? "h-8 rounded-full border-primary/30 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white"
-                    : "h-8 rounded-full border-primary/20 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/82"
+                    ? "h-8 rounded-full border-white/15 bg-black/20 px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-200"
+                    : "h-8 rounded-full border-white/10 bg-transparent px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400"
                 }
               >
                 {label}
@@ -1022,24 +1170,43 @@ export function SourceShelf({
 
         <div className="flex flex-wrap gap-2">
           <label className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/48" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search sources..."
-              className="h-10 w-full rounded-full border border-primary/18 bg-black/20 pl-10 pr-4 font-mono text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-primary/32"
+              className="h-10 w-full rounded-full border border-white/10 bg-black/20 pl-10 pr-4 text-[13px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-white/15"
             />
           </label>
 
           <Button
             type="button"
             variant="outline"
+            onClick={handleSyncRootFolder}
+            disabled={syncing || !resolvedRootFolder}
+            title={
+              resolvedRootFolder
+                ? `Re-index ${resolvedRootFolder} into Library by its folder structure — no re-upload needed.`
+                : "Root Folder not resolved — set TUTOR_MATERIALS_DIR / PT_SCHOOL_MATERIALS_DIR (brain/.env)."
+            }
+            className="h-10 rounded-full border-white/10 bg-black/20 px-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-200/82 hover:bg-black/30 hover:text-white"
+          >
+            {syncing ? (
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FolderSync className="mr-2 h-3.5 w-3.5" />
+            )}
+            {syncing ? "Syncing..." : "Sync Root Folder"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => uploadInputRef.current?.click()}
             disabled={isUploading}
-            className="h-10 rounded-full border-primary/20 bg-black/20 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-white/82 hover:bg-black/30 hover:text-white"
+            className="h-10 rounded-full border-white/10 bg-black/20 px-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-200/82 hover:bg-black/30 hover:text-white"
           >
             <Upload className="mr-2 h-3.5 w-3.5" />
-            {isUploading ? "Uploading..." : "Upload"}
+            {isUploading ? "Uploading..." : "Upload to Current Run"}
           </Button>
           <input
             ref={uploadInputRef}
@@ -1051,23 +1218,55 @@ export function SourceShelf({
             onChange={handleUploadChange}
           />
         </div>
+
+        <div
+          data-testid="source-shelf-root-folder"
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500"
+        >
+          <span className="text-zinc-400">Root Folder</span>
+          {resolvedRootFolder ? (
+            <>
+              <span
+                title={resolvedRootFolder}
+                className="max-w-full truncate font-mono normal-case tracking-normal text-zinc-300"
+              >
+                {resolvedRootFolder}
+              </span>
+              {typeof rootFolderFileCount === "number" ? (
+                <span className="text-zinc-500">
+                  · {rootFolderFileCount} file
+                  {rootFolderFileCount === 1 ? "" : "s"}
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <span
+              title={rootFolderErrorMessage ?? undefined}
+              className="font-mono normal-case tracking-normal text-amber-300/80"
+            >
+              {rootFolderErrorMessage
+                ? `Not resolved — ${rootFolderErrorMessage}`
+                : "Resolving…"}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
+        <div className="rounded-lg border border-white/[0.06] bg-zinc-950/40 p-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Course
           </div>
           <div className="mt-1 text-sm text-white">
             {courseName || "No course selected"}
           </div>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Study Unit
           </div>
           <div className="mt-1 text-sm text-white">
             {studyUnit || "No study unit selected"}
           </div>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Topic
           </div>
           <div className="mt-1 text-sm text-white">
@@ -1075,8 +1274,8 @@ export function SourceShelf({
           </div>
         </div>
 
-        <div className="rounded-[0.95rem] border border-primary/15 bg-black/15 p-3">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
+        <div className="rounded-lg border border-white/[0.06] bg-zinc-950/40 p-3">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             <BookOpen className="h-3.5 w-3.5" />
             Current Run
           </div>
@@ -1087,18 +1286,18 @@ export function SourceShelf({
           <div className="mt-1 text-sm text-foreground/90">
             {runVaultCount} vault link{runVaultCount === 1 ? "" : "s"} loaded
           </div>
-          <div className="mt-3 break-all text-xs text-foreground/75">
+          <div className="mt-3 break-all text-xs text-zinc-400">
             {normalizedVaultFolder || "Vault path not derived yet"}
           </div>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col rounded-[1rem] border border-primary/14 bg-black/10 p-3">
+      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-white/[0.06] bg-black/10 p-3">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-primary">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">
             Unified Source Tree
           </div>
-          <div className="text-xs text-foreground/75">
+          <div className="text-xs text-zinc-400">
             {activeFilter === "current_run"
               ? "Showing loaded sources"
               : activeFilter === "library"
@@ -1129,7 +1328,7 @@ export function SourceShelf({
               ))}
             </div>
           ) : (
-            <div className="rounded-[0.95rem] border border-dashed border-primary/16 bg-black/15 px-4 py-6 text-sm text-foreground/56">
+            <div className="rounded-[var(--ds-r-095)] border border-dashed border-primary/16 bg-black/15 px-4 py-6 text-sm text-foreground/56">
               {vaultListingLoading && activeFilter === "vault"
                 ? "Loading vault notes..."
                 : "No sources match the current filter."}

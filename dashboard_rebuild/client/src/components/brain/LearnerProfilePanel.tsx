@@ -89,7 +89,7 @@ function ProfileOverviewCard({
           <Button
             type="button"
             variant="outline"
-            className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
+            className="rounded-[var(--ds-r-100)] font-arcade text-sm tracking-[0.14em]"
             onClick={onRefresh}
             disabled={refreshing}
           >
@@ -182,18 +182,18 @@ function ProfileOverviewCard({
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+          <div className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3">
             <div className={CONTROL_KICKER}>Generated</div>
             <div className={PROFILE_META}>{profile.generatedAt}</div>
           </div>
-          <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+          <div className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3">
             <div className={CONTROL_KICKER}>Source Window</div>
             <div className={PROFILE_META}>
               {profile.sourceWindow.start || "n/a"} {"->"}{" "}
               {profile.sourceWindow.end || "n/a"}
             </div>
           </div>
-          <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+          <div className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3">
             <div className={CONTROL_KICKER}>Backfill</div>
             <div className={PROFILE_META}>{profile.backfillMode}</div>
           </div>
@@ -219,7 +219,7 @@ function EvidenceOwnershipCard({ profile }: { profile: LearnerProfile }) {
         {profile.reliabilityTiers.map((tier) => (
           <div
             key={tier.tier}
-            className="rounded-[1rem] border border-primary/20 bg-black/30 p-3"
+            className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3"
           >
             <div className="flex items-center justify-between gap-2">
               <span className={CONTROL_KICKER}>
@@ -231,7 +231,7 @@ function EvidenceOwnershipCard({ profile }: { profile: LearnerProfile }) {
             </p>
           </div>
         ))}
-        <div className="rounded-[1rem] border border-primary/20 bg-black/30 p-3">
+        <div className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3">
           <div className={CONTROL_KICKER}>Evidence Summary</div>
           <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-sm leading-6 text-foreground/68">
             {JSON.stringify(profile.evidenceSummary, null, 2)}
@@ -259,7 +259,7 @@ function ClaimCard({
     <Card
       key={claim.claimKey}
       className={cn(
-        "rounded-[1rem] border-2 bg-black/30",
+        "rounded-[var(--ds-r-100)] border-2 bg-black/30",
         signalTone(claim.signalDirection, claim.score),
       )}
       data-testid={`claim-card-${claim.claimKey}`}
@@ -307,12 +307,12 @@ function ClaimCard({
           </div>
         </div>
 
-        <div className="rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
           <div className={CONTROL_KICKER}>Recommended Strategy</div>
           <div className={PROFILE_META}>{claim.recommendedStrategy}</div>
         </div>
 
-        <div className="rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+        <div className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
           <div className={CONTROL_KICKER}>Evidence</div>
           <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-sm leading-6 text-foreground/68">
             {JSON.stringify(claim.evidence, null, 2)}
@@ -328,13 +328,13 @@ function ClaimCard({
             value={draft}
             onChange={(event) => onDraftChange(event.target.value)}
             placeholder="Tell Brain what it is missing, overstating, or interpreting incorrectly."
-            className="min-h-[96px] rounded-[1rem] border-primary/30 bg-black/40 font-mono text-sm leading-6"
+            className="min-h-[96px] rounded-[var(--ds-r-100)] border-primary/30 bg-black/40 font-mono text-sm leading-6"
             data-testid={`claim-challenge-${claim.claimKey}`}
           />
           <Button
             type="button"
             variant="outline"
-            className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
+            className="rounded-[var(--ds-r-100)] font-arcade text-sm tracking-[0.14em]"
             disabled={submitting || !draft.trim()}
             onClick={onSubmit}
           >
@@ -415,7 +415,7 @@ function CalibrationQuestionsCard({
           questions.map((question) => (
             <div
               key={question.id}
-              className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/30 p-3"
+              className="space-y-3 rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3"
               data-testid={`question-card-${question.id}`}
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -440,13 +440,13 @@ function CalibrationQuestionsCard({
                   onDraftChange(question.id, event.target.value)
                 }
                 placeholder="Answer to calibrate Brain's learner model."
-                className="min-h-[96px] rounded-[1rem] border-primary/30 bg-black/40 font-mono text-sm leading-6"
+                className="min-h-[96px] rounded-[var(--ds-r-100)] border-primary/30 bg-black/40 font-mono text-sm leading-6"
                 data-testid={`question-answer-${question.id}`}
               />
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-[1rem] font-arcade text-sm tracking-[0.14em]"
+                className="rounded-[var(--ds-r-100)] font-arcade text-sm tracking-[0.14em]"
                 disabled={
                   submittingKeys[`question:${question.id}`] ||
                   !(questionDrafts[question.id] || "").trim()
@@ -489,7 +489,7 @@ function ProfileTimelineCard({
           history.map((item) => (
             <div
               key={item.snapshotId}
-              className="rounded-[1rem] border border-primary/20 bg-black/30 p-3"
+              className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-3"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className={CONTROL_KICKER}>{item.archetypeLabel}</div>

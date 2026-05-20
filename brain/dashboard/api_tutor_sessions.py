@@ -60,6 +60,7 @@ from dashboard.api_tutor_utils import (
     _collect_objectives_from_payload,
     _prime_assessment_violations,
     _unlink_all_tutor_session_learning_objectives,
+    _validate_teach_session_create,
 )
 
 from dashboard.api_tutor_vault import (
@@ -70,6 +71,7 @@ from dashboard.api_tutor_vault import (
     _vault_save_note,
     _sync_graph_for_paths,
     _ensure_moc_context,
+    _is_nonblocking_moc_error,
     _resolve_tutor_preflight,
 )
 
@@ -453,24 +455,9 @@ def create_session():
             content_filter.get("focus_objective_id") or focus_objective_id
         ).strip()
 
-    requires_certified_preflight = preflight_bundle is None and (
-        bool(focus_objective_id)
-        or bool(data.get("study_unit"))
-        or (
-            isinstance(data.get("learning_objectives"), list)
-            and objective_scope != "single_focus"
-        )
-    )
-    if requires_certified_preflight:
-        return (
-            jsonify(
-                {
-                    "error": "Objective-scoped certified Tutor sessions must start from preflight.",
-                    "code": "PREFLIGHT_REQUIRED",
-                }
-            ),
-            400,
-        )
+    # Workspace Context is now the user-facing session authority. The legacy
+    # preflight endpoint remains available for preview diagnostics, but direct
+    # Tutor starts may carry objective/material context in the create payload.
     map_of_contents_refresh = bool(
         data.get(
             "map_of_contents_refresh",
@@ -540,7 +527,15 @@ def create_session():
             path_override=vault_folder,
         )
         if map_of_contents_error:
-            return jsonify({"error": map_of_contents_error}), 500
+            if source_ids and _is_nonblocking_moc_error(map_of_contents_error):
+                _LOG.warning("Proceeding without MoC context: %s", map_of_contents_error)
+                if not isinstance(content_filter, dict):
+                    content_filter = {}
+                content_filter["map_of_contents_warning"] = map_of_contents_error
+                map_of_contents_ctx = None
+                map_of_contents_error = None
+            else:
+                return jsonify({"error": map_of_contents_error}), 500
 
     if not isinstance(content_filter, dict):
         content_filter = {}
@@ -639,9 +634,56 @@ def create_session():
 
     session_id = _gen_session_id()
     now = datetime.now().isoformat()
+    workflow_id = str(data.get("workflow_id") or "").strip() or None
 
     conn = get_connection()
     _ensure_selector_columns(conn)
+    try:
+        from dashboard.api_tutor_memory import _ensure_tutor_memory_schema
+
+        _ensure_tutor_memory_schema(conn)
+    except Exception:
+        pass
+    session_kind = str(data.get("session_kind") or "").strip().lower()
+    explicit_teach_leg_label = str(data.get("teach_leg_label") or "").strip()
+    teach_leg_label = explicit_teach_leg_label or str(topic or "").strip()
+    is_strict_teach = session_kind == "tutor" or bool(explicit_teach_leg_label)
+    if session_kind == "tutor" and not method_chain_id:
+        conn.close()
+        return (
+            jsonify(
+                {
+                    "error": "Tutor teach requires a template chain or one custom method.",
+                    "code": "TEACH_CHAIN_REQUIRED",
+                }
+            ),
+            400,
+        )
+    if method_chain_id and is_strict_teach:
+        if not isinstance(content_filter, dict):
+            content_filter = {}
+        ok, code, message = _validate_teach_session_create(
+            conn,
+            method_chain_id=method_chain_id,
+            teach_leg_label=teach_leg_label,
+            content_filter=content_filter,
+        )
+        if not ok:
+            conn.close()
+            return jsonify({"error": message, "code": code}), 400
+        content_filter["teach_leg_label"] = teach_leg_label
+        content_filter["session_kind"] = "tutor"
+        if not str(topic or "").strip():
+            topic = teach_leg_label
+    elif method_chain_id:
+        if not isinstance(content_filter, dict):
+            content_filter = {}
+        content_filter.setdefault("session_kind", "tutor")
+    else:
+        if not isinstance(content_filter, dict):
+            content_filter = {}
+        content_filter["session_kind"] = "general"
+
     cur = conn.cursor()
     linked_brain_session_id: Optional[int] = None
     if brain_session_id is not None:
@@ -664,8 +706,8 @@ def create_session():
            (session_id, brain_session_id, brain_profile_snapshot_id, course_id, phase, topic, content_filter_json,
             scholar_strategy_json, status, turn_count, method_chain_id, current_block_index, started_at,
             selector_chain_id, selector_score_json, selector_policy_version,
-            selector_dependency_fix)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
+            selector_dependency_fix, workflow_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?, ?)""",
         (
             session_id,
             linked_brain_session_id,
@@ -681,8 +723,23 @@ def create_session():
             selector_meta.get("selector_score_json"),
             selector_meta.get("selector_policy_version"),
             selector_meta.get("selector_dependency_fix"),
+            workflow_id,
         ),
     )
+
+    if workflow_id and isinstance(content_filter, dict) and content_filter.get("session_kind") == "tutor":
+        try:
+            cur.execute(
+                """UPDATE tutor_workflows
+                   SET active_tutor_session_id = ?,
+                       current_stage = 'tutor',
+                       status = 'tutor_in_progress',
+                       updated_at = ?
+                   WHERE workflow_id = ?""",
+                (session_id, now, workflow_id),
+            )
+        except Exception as exc:
+            _LOG.warning("create_session: workflow link failed: %s", exc)
 
     first_block_name = None
     greeting = None
@@ -1084,6 +1141,9 @@ def end_session(session_id: str):
     from dashboard.api_tutor import _ensure_selector_columns
     from dashboard.api_tutor_turns import _get_tutor_session
 
+    payload = request.get_json(silent=True) or {}
+    advance_workflow = bool(payload.get("advance_workflow", True))
+
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
     if not session:
@@ -1156,27 +1216,52 @@ def end_session(session_id: str):
             (str(brain_session_id), session_id),
         )
 
-    # --- Advance parent workflow past tutor stage ---
+    # --- Parent workflow: End teach vs advance to Polish ---
     try:
-        cur.execute(
-            """UPDATE tutor_workflows
-               SET current_stage = 'polish',
-                   status = 'polish_in_progress',
-                   active_tutor_session_id = NULL,
-                   updated_at = ?
-               WHERE active_tutor_session_id = ?
-                 AND current_stage = 'tutor'
-                 AND status = 'tutor_in_progress'""",
-            (now.isoformat(), session_id),
-        )
-        if cur.rowcount:
-            _LOG.info(
-                "end_session: advanced %d workflow(s) to polish for session %s",
-                cur.rowcount,
-                session_id,
+        if advance_workflow:
+            cur.execute(
+                """UPDATE tutor_workflows
+                   SET current_stage = 'polish',
+                       status = 'polish_in_progress',
+                       active_tutor_session_id = NULL,
+                       updated_at = ?
+                   WHERE active_tutor_session_id = ?
+                     AND current_stage = 'tutor'
+                     AND status = 'tutor_in_progress'""",
+                (now.isoformat(), session_id),
             )
+            if cur.rowcount:
+                _LOG.info(
+                    "end_session: advanced %d workflow(s) to polish for session %s",
+                    cur.rowcount,
+                    session_id,
+                )
+        else:
+            cur.execute(
+                """UPDATE tutor_workflows
+                   SET active_tutor_session_id = NULL,
+                       updated_at = ?
+                   WHERE active_tutor_session_id = ?""",
+                (now.isoformat(), session_id),
+            )
+            if cur.rowcount:
+                _LOG.info(
+                    "end_session: cleared active tutor session for %d workflow(s) (end teach)",
+                    cur.rowcount,
+                )
     except Exception as exc:
-        _LOG.warning("end_session: workflow advancement failed: %s", exc)
+        _LOG.warning("end_session: workflow update failed: %s", exc)
+
+    try:
+        from dashboard.api_tutor_memory import on_teach_session_end
+
+        on_teach_session_end(
+            conn,
+            session_id,
+            workflow_id=str(session.get("workflow_id") or "").strip() or None,
+        )
+    except Exception as exc:
+        _LOG.warning("end_session: polish draft hook failed: %s", exc)
 
     log_product_event(
         conn,
@@ -1512,6 +1597,67 @@ def end_session(session_id: str):
             "map_of_contents_refresh": map_of_contents_refresh,
             "janitor": janitor_result,
             "vault_save": vault_save_result,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/session/<id>/resume — Reactivate an ended/completed session
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/resume", methods=["POST"])
+def resume_session(session_id: str):
+    """Reactivate a previously ended/completed/abandoned Tutor session so the
+    learner can continue it from PREVIOUS SESSIONS.
+
+    Turn submission requires ``status == 'active'`` (see api_tutor_turns), so a
+    session that was ended can be viewed but not continued until its status is
+    flipped back. This endpoint flips ``status`` -> ``'active'`` and clears
+    ``ended_at``. It is idempotent: resuming an already-active session is a
+    no-op success.
+    """
+    from dashboard.api_tutor_turns import _get_tutor_session
+
+    conn = get_connection()
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    prior_status = str(session.get("status") or "").strip().lower()
+    if prior_status == "active":
+        conn.close()
+        return jsonify(
+            {
+                "session_id": session_id,
+                "status": "active",
+                "prior_status": prior_status,
+                "already_active": True,
+            }
+        )
+
+    cur = conn.cursor()
+    cur.execute(
+        """UPDATE tutor_sessions
+           SET status = 'active', ended_at = NULL
+           WHERE session_id = ?""",
+        (session_id,),
+    )
+    conn.commit()
+    conn.close()
+
+    _LOG.info(
+        "resume_session session_id=%s prior_status=%s -> active",
+        session_id,
+        prior_status or "unknown",
+    )
+    return jsonify(
+        {
+            "session_id": session_id,
+            "status": "active",
+            "prior_status": prior_status,
+            "already_active": False,
         }
     )
 

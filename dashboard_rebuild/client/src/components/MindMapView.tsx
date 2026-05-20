@@ -90,9 +90,13 @@ function createMindMapUiState(): MindMapUiState {
     drawStrokes: [],
     showMermaidImport: false,
     mermaidInput: "",
-    selectedCourses: new Set(COURSE_FOLDERS.map((course) => course.id)),
-    selectedSubfolders: new Set(),
-    showNotes: true,
+    // Do NOT auto-pull the entire vault. The session bundle seed
+    // (buildMindMapFromBundle) is the default content; the user opts into
+    // specific vault courses/notes via the toolbar. This fixes the map
+    // "drawing from all sorts of old files".
+    selectedCourses: new Set<string>(),
+    selectedSubfolders: new Set<string>(),
+    showNotes: false,
   };
 }
 

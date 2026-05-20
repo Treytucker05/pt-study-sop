@@ -146,6 +146,7 @@ scripts/_ai_config_backups/
 # Scratch directories
 /tmp/
 /.codex_tmp/
+/scratch/
 
 # Playwright MCP screenshots (local only)
 .playwright-mcp/*.png

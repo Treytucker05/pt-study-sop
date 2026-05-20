@@ -51,7 +51,7 @@ export function buildTutorWorkspacePopoutHtml(args: {
     <style>
       :root {
         color-scheme: dark;
-        --bg: #05070d;
+        --bg: #08080c;
         --surface: rgba(16, 22, 33, 0.95);
         --border: rgba(94, 234, 212, 0.2);
         --text: #e5edf8;

@@ -30,7 +30,7 @@ button.tl-sim-hover[class*="hud-button-"] {
   border-radius: 0;
   clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
   color: var(--text-main);
-  background: linear-gradient(180deg, #070508, var(--hud-color-bg-base));
+  background: linear-gradient(180deg, #08080c, var(--hud-color-bg-base));
   border: 2px solid var(--hud-color-accent);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--hud-color-accent) 35%, transparent) inset,
@@ -94,7 +94,7 @@ button.tl-sim-hover[class*="hud-button-"] {
   overflow: hidden;
   border-radius: 4px;
   color: var(--text-main);
-  background: linear-gradient(180deg, #0c0a0e, #050406);
+  background: linear-gradient(180deg, #08080c, #08080c);
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
   box-shadow:
     inset 0 0 24px color-mix(in srgb, var(--hud-color-accent) 28%, transparent),
@@ -127,9 +127,9 @@ button.tl-sim-hover[class*="hud-button-"] {
   color: var(--text-main);
   background: radial-gradient(
     120% 85% at 50% -10%,
-    color-mix(in srgb, var(--hud-color-accent) 42%, #1a060c),
-    #060306 55%,
-    #030204 100%
+    color-mix(in srgb, var(--hud-color-accent) 42%, #16040a),
+    #0a0407 55%,
+    #000000 100%
   );
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 40%, transparent);
   box-shadow:
@@ -143,7 +143,7 @@ button.tl-sim-hover[class*="hud-button-"] {
   overflow: hidden;
   border-radius: var(--hud-radius-md);
   color: var(--text-main);
-  background: linear-gradient(145deg, #10080c, var(--hud-color-surface-inset));
+  background: linear-gradient(145deg, #12070b, var(--hud-color-surface-inset));
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 28%, transparent);
   box-shadow: var(--hud-glow-sm), var(--hud-shadow-panel);
 }
@@ -330,7 +330,7 @@ button.tl-sim-hover[class*="hud-button-"] {
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--hud-color-accent) 35%, #1c1016),
-    color-mix(in srgb, var(--hud-color-accent-deep) 40%, #0a0608)
+    color-mix(in srgb, var(--hud-color-accent-deep) 40%, #0a0407)
   );
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 45%, transparent);
   box-shadow: 0 0 16px color-mix(in srgb, var(--hud-color-accent) 18%, transparent);
@@ -371,7 +371,7 @@ button.tl-sim-hover[class*="hud-button-"] {
   border-radius: var(--hud-radius-pill);
   padding-left: 46px;
   color: #fff;
-  background: linear-gradient(180deg, #141018, #0a080c);
+  background: linear-gradient(180deg, #141018, #08080c);
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 35%, transparent);
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.5);
 }
@@ -405,7 +405,7 @@ button.tl-sim-hover[class*="hud-button-"] {
 .hud-button-e[aria-pressed="false"]::after {
   left: 31px;
   background: #52525b;
-  border-color: #3f3f46;
+  border-color: #3f3d44;
   box-shadow: none;
 }
 .hud-button-e:hover:not(:disabled) {
@@ -518,9 +518,9 @@ button.tl-sim-hover[class*="hud-button-"] {
   color: #fff;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--hud-color-accent) 58%, #120810) 0%,
+    color-mix(in srgb, var(--hud-color-accent) 58%, #140810) 0%,
     color-mix(in srgb, var(--hud-color-surface-b) 92%, transparent) 42%,
-    color-mix(in srgb, var(--hud-color-accent-deep) 45%, #0a0608) 100%
+    color-mix(in srgb, var(--hud-color-accent-deep) 45%, #0a0407) 100%
   );
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 38%, transparent);
   box-shadow: var(--hud-glow-xs), 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -595,7 +595,7 @@ button.tl-sim-hover[class*="hud-button-"] {
 }
 .hud-tab-a[aria-selected="true"] {
   color: #fff;
-  background: color-mix(in srgb, var(--hud-color-accent) 78%, #1a0508);
+  background: color-mix(in srgb, var(--hud-color-accent) 78%, #16040a);
   border-color: color-mix(in srgb, var(--hud-color-accent) 55%, transparent);
   border-bottom: 2px solid var(--hud-color-accent);
   box-shadow: 0 0 18px color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
@@ -839,7 +839,7 @@ button.tl-sim-hover[class*="hud-button-"] {
 .hud-textarea-b {
   border-radius: var(--hud-radius-md);
   border: 1px solid color-mix(in srgb, var(--hud-color-accent) 22%, transparent);
-  background: #0a080c;
+  background: #08080c;
 }
 .hud-input-b:focus,
 .hud-textarea-b:focus,
@@ -858,7 +858,7 @@ button.tl-sim-hover[class*="hud-button-"] {
 .hud-textarea-c {
   border-radius: var(--hud-radius-sm);
   border: 2px solid color-mix(in srgb, var(--hud-color-accent) 38%, transparent);
-  background: linear-gradient(180deg, #120a10, #0a060c);
+  background: linear-gradient(180deg, #12070b, #0a0407);
   box-shadow: 0 0 16px color-mix(in srgb, var(--hud-color-accent) 10%, transparent);
 }
 .hud-input-c:focus,
@@ -914,7 +914,7 @@ button.tl-sim-hover[class*="hud-button-"] {
 .hud-textarea-f {
   border-radius: var(--hud-radius-sm);
   border: 1px solid var(--hud-border-muted);
-  background-color: #0a0609;
+  background-color: #0a0407;
   background-image: repeating-linear-gradient(
     180deg,
     transparent,
@@ -1029,7 +1029,7 @@ button.tl-sim-hover[class*="hud-button-"] {
   background: linear-gradient(
     165deg,
     color-mix(in srgb, var(--hud-color-accent-bright) 70%, #300610),
-    color-mix(in srgb, var(--hud-color-accent-deep) 90%, #080204)
+    color-mix(in srgb, var(--hud-color-accent-deep) 90%, #0a0407)
   );
   clip-path: polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%);
   border: 1px solid color-mix(in srgb, var(--hud-color-accent-bright) 80%, transparent);

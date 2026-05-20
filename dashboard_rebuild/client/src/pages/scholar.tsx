@@ -153,15 +153,15 @@ function confidenceTone(confidence?: string) {
 const SCHOLAR_PANEL_HEADER =
   "border-b border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_70%)]";
 const SCHOLAR_PANEL_SURFACE =
-  "overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(118,10,34,0.18),rgba(10,4,8,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
+  "overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.16)_100%),linear-gradient(135deg,rgba(124,14,38,0.18),rgba(10,4,7,0.18)_58%,rgba(0,0,0,0.1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl";
 const SCHOLAR_PANEL_TITLE = TEXT_PANEL_TITLE;
 const SCHOLAR_FIELD_LABEL = `${TEXT_SECTION_LABEL} text-primary/84`;
 const SCHOLAR_COPY = `${TEXT_BODY} text-base leading-7 text-foreground/82`;
 const SCHOLAR_META = `${TEXT_MUTED} text-sm leading-6 text-foreground/68`;
 const SCHOLAR_BADGE = `${TEXT_BADGE} px-2.5 py-1 text-ui-2xs`;
-const SCHOLAR_TEXTAREA = `${INPUT_BASE} rounded-[1rem] border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] text-base leading-7`;
-const SCHOLAR_SELECT = `${SELECT_BASE} rounded-[1rem] border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] text-base`;
-const SCHOLAR_INSET = "rounded-[1rem] border border-primary/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.04)_18%,rgba(0,0,0,0.12)_100%)] p-3 backdrop-blur-lg";
+const SCHOLAR_TEXTAREA = `${INPUT_BASE} rounded-[var(--ds-r-100)] border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] text-base leading-7`;
+const SCHOLAR_SELECT = `${SELECT_BASE} rounded-[var(--ds-r-100)] border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.2)_100%)] text-base`;
+const SCHOLAR_INSET = "rounded-[var(--ds-r-100)] border border-primary/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.04)_18%,rgba(0,0,0,0.12)_100%)] p-3 backdrop-blur-lg";
 
 function ScholarSidebar({
   brainLaunchContext,
@@ -269,19 +269,19 @@ function ScholarSidebar({
             <div className={SCHOLAR_COPY}>{detail.title}</div>
             <div className={SCHOLAR_META}>{detail.rationale}</div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2.5">
+              <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/20 p-2.5">
                 <div className={SCHOLAR_FIELD_LABEL}>Findings</div>
                 <div className="font-mono text-base leading-7 text-foreground">
                   {detail.findings_count ?? 0}
                 </div>
               </div>
-              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2.5">
+              <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/20 p-2.5">
                 <div className={SCHOLAR_FIELD_LABEL}>Open Qs</div>
                 <div className="font-mono text-base leading-7 text-foreground">
                   {detail.open_question_count ?? 0}
                 </div>
               </div>
-              <div className="rounded-[0.85rem] border border-primary/15 bg-black/20 p-2.5">
+              <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/20 p-2.5">
                 <div className={SCHOLAR_FIELD_LABEL}>Sources</div>
                 <div className="font-mono text-base leading-7 text-foreground">
                   {detail.sources?.length ?? 0}
@@ -369,22 +369,22 @@ function ScholarWorkspaceTab({
                 <SelectTrigger className={SCHOLAR_SELECT}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-[1rem] border-primary/40 bg-black/95">
+                <SelectContent className="rounded-[var(--ds-r-100)] border-primary/40 bg-black/95">
                   <SelectItem
                     value="learner"
-                    className="rounded-[0.85rem] font-mono text-sm"
+                    className="rounded-[var(--ds-r-085)] font-mono text-sm"
                   >
                     Learner
                   </SelectItem>
                   <SelectItem
                     value="operator"
-                    className="rounded-[0.85rem] font-mono text-sm"
+                    className="rounded-[var(--ds-r-085)] font-mono text-sm"
                   >
                     Operator
                   </SelectItem>
                   <SelectItem
                     value="system"
-                    className="rounded-[0.85rem] font-mono text-sm"
+                    className="rounded-[var(--ds-r-085)] font-mono text-sm"
                   >
                     System
                   </SelectItem>
@@ -452,9 +452,9 @@ function ScholarWorkspaceTab({
                       <button
                         key={investigation.investigation_id}
                         type="button"
-                        className={`w-full rounded-[1rem] text-left border p-4 bg-black/30 transition ${
+                        className={`w-full rounded-[var(--ds-r-100)] text-left border p-4 bg-black/30 transition ${
                           isSelected
-                            ? "border-primary shadow-[0_0_0_1px_rgba(255,94,126,0.18)]"
+                            ? "border-primary shadow-[0_0_0_1px_rgba(255,98,126,0.18)]"
                             : "border-primary/20 hover:border-primary/60"
                         }`}
                         onClick={() =>
@@ -494,19 +494,19 @@ function ScholarWorkspaceTab({
                           {investigation.rationale}
                         </div>
                         <div className="grid grid-cols-3 gap-2 mt-3">
-                          <div className="rounded-[0.85rem] border border-primary/20 bg-black/20 p-2.5">
+                          <div className="rounded-[var(--ds-r-085)] border border-primary/20 bg-black/20 p-2.5">
                             <div className={SCHOLAR_FIELD_LABEL}>Findings</div>
                             <div className="font-mono text-sm leading-6 text-foreground">
                               {investigation.findings_count ?? 0}
                             </div>
                           </div>
-                          <div className="rounded-[0.85rem] border border-primary/20 bg-black/20 p-2.5">
+                          <div className="rounded-[var(--ds-r-085)] border border-primary/20 bg-black/20 p-2.5">
                             <div className={SCHOLAR_FIELD_LABEL}>Open Qs</div>
                             <div className="font-mono text-sm leading-6 text-foreground">
                               {investigation.open_question_count ?? 0}
                             </div>
                           </div>
-                          <div className="rounded-[0.85rem] border border-primary/20 bg-black/20 p-2.5">
+                          <div className="rounded-[var(--ds-r-085)] border border-primary/20 bg-black/20 p-2.5">
                             <div className={SCHOLAR_FIELD_LABEL}>Updated</div>
                             <div className="font-mono text-sm leading-6 text-foreground">
                               {investigation.updated_at
@@ -565,7 +565,7 @@ function ScholarQuestionsTab({
               return (
                 <div
                   key={questionId}
-                  className="rounded-[1rem] border border-primary/20 bg-black/30 p-4"
+                  className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-4"
                   data-testid={`question-card-${questionId}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -605,7 +605,7 @@ function ScholarQuestionsTab({
                     </p>
                   ) : null}
                   {question.evidence_needed ? (
-                    <div className="mt-2 rounded-[0.85rem] border border-primary/10 bg-black/20 p-2.5">
+                    <div className="mt-2 rounded-[var(--ds-r-085)] border border-primary/10 bg-black/20 p-2.5">
                       <div className={SCHOLAR_FIELD_LABEL}>Evidence Needed</div>
                       <div className={cn(SCHOLAR_META, "mt-1")}>
                         {question.evidence_needed}
@@ -615,7 +615,7 @@ function ScholarQuestionsTab({
 
                   {answered ? (
                     <div
-                      className="mt-3 rounded-[0.85rem] border border-emerald-500/20 bg-emerald-500/5 p-3"
+                      className="mt-3 rounded-[var(--ds-r-085)] border border-emerald-500/20 bg-emerald-500/5 p-3"
                       data-testid={`saved-answer-${questionId}`}
                     >
                       <div
@@ -666,7 +666,7 @@ function ScholarQuestionsTab({
           )}
 
           {openQuestionsCount > 0 ? (
-            <div className="rounded-[0.95rem] border border-yellow-500/20 bg-yellow-500/5 p-3">
+            <div className="rounded-[var(--ds-r-095)] border border-yellow-500/20 bg-yellow-500/5 p-3">
               <div className={cn(SCHOLAR_FIELD_LABEL, "text-yellow-300")}>
                 Why these questions matter
               </div>
@@ -701,7 +701,7 @@ function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
             findings.map((finding, index) => (
               <div
                 key={finding.finding_id || `${finding.title}-${index}`}
-                className="rounded-[1rem] border border-primary/20 bg-black/30 p-4"
+                className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Badge
@@ -731,7 +731,7 @@ function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
                   </div>
                 ) : null}
                 {finding.uncertainty ? (
-                  <div className="mt-2 rounded-[0.85rem] border border-yellow-500/20 bg-yellow-500/5 p-2.5">
+                  <div className="mt-2 rounded-[var(--ds-r-085)] border border-yellow-500/20 bg-yellow-500/5 p-2.5">
                     <div className={cn(SCHOLAR_FIELD_LABEL, "text-yellow-300")}>
                       Uncertainty
                     </div>
@@ -748,7 +748,7 @@ function ScholarFindingsTab({ findings }: { findings: ScholarFinding[] }) {
                         href={source.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block rounded-[0.95rem] border border-primary/15 bg-black/20 p-3 hover:border-primary/40"
+                        className="block rounded-[var(--ds-r-095)] border border-primary/15 bg-black/20 p-3 hover:border-primary/40"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge
@@ -809,7 +809,7 @@ function ScholarHistoryTab({
             investigations.map((investigation) => (
               <div
                 key={investigation.investigation_id}
-                className="rounded-[1rem] border border-primary/20 bg-black/30 p-4"
+                className="rounded-[var(--ds-r-100)] border border-primary/20 bg-black/30 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Badge
@@ -830,7 +830,7 @@ function ScholarHistoryTab({
                   {investigation.rationale}
                 </p>
                 {investigation.error_message ? (
-                  <div className="mt-3 rounded-[0.85rem] border border-destructive/20 bg-destructive/5 p-2.5">
+                  <div className="mt-3 rounded-[var(--ds-r-085)] border border-destructive/20 bg-destructive/5 p-2.5">
                     <div
                       className={cn(
                         SCHOLAR_FIELD_LABEL,
@@ -845,7 +845,7 @@ function ScholarHistoryTab({
                   </div>
                 ) : null}
                 {investigation.run_notes ? (
-                  <div className="mt-3 rounded-[0.85rem] border border-primary/10 bg-black/20 p-2.5">
+                  <div className="mt-3 rounded-[var(--ds-r-085)] border border-primary/10 bg-black/20 p-2.5">
                     <div className={SCHOLAR_FIELD_LABEL}>Run Notes</div>
                     <div className={cn(SCHOLAR_META, "mt-1")}>
                       {investigation.run_notes}

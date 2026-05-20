@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TutorShell } from "@/components/TutorShell";
 import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
 import { getStudioCanvasShapeId } from "@/lib/studioCanvasShapes";
+import { expandAllSourceFolders } from "@/test/sourceShelf";
 import {
   getStudioExcerptObjectId,
   getStudioImageObjectId,
@@ -24,11 +25,13 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
     onStartTutor,
     onRunAssistForSelected,
     onOpenConceptMapInWorkspace,
+    onSendResultToWorkspace,
     selectedMaterials = [],
   }: {
     onStartTutor?: () => void;
     onRunAssistForSelected?: (methodIdOverride?: string) => void;
     onOpenConceptMapInWorkspace?: (mermaid: string) => void;
+    onSendResultToWorkspace?: (workspaceObject: unknown) => void;
     selectedMaterials?: number[];
   }) => (
     <div data-testid="mock-priming-panel">
@@ -41,6 +44,29 @@ vi.mock("@/components/TutorWorkflowPrimingPanel", () => ({
       </button>
       <button type="button" onClick={() => onRunAssistForSelected?.()}>
         Run Priming Assist from priming panel
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSendResultToWorkspace?.({
+            id: "priming-result:workspace-objectives",
+            kind: "text_note",
+            title: "Workspace-selected objectives",
+            detail: "Use selected Workspace cards as Tutor context.",
+            badge: "OBJECTIVES",
+            workspace: {
+              tutorContext: true,
+              obsidianHandoff: true,
+            },
+            provenance: {
+              sourceType: "priming_result",
+              resultKey: "learning-objectives",
+              sourceLabel: "Learning Objectives Primer",
+            },
+          })
+        }
+      >
+        Capture Workspace priming note
       </button>
       <button
         type="button"
@@ -845,6 +871,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Current Run");
     expect(sourceShelf).toHaveTextContent("Exercise Physiology");
     expect(sourceShelf).toHaveTextContent("Week 7");
@@ -891,6 +918,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^library$/i }));
 
     expect(sourceShelf).toHaveTextContent("Showing library materials");
@@ -951,6 +979,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
     await waitFor(() =>
       expect(getObsidianFilesMock).toHaveBeenCalledWith(
@@ -1028,6 +1057,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Exercise Physiology/Week 7");
 
     await userEvent.click(within(sourceShelf).getByRole("button", { name: /^vault$/i }));
@@ -1052,6 +1082,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
 
     expect(screen.getByTestId("mock-priming-loaded-materials")).toHaveTextContent(
       "1 loaded materials",
@@ -1829,7 +1860,7 @@ describe("TutorShell studio routing", () => {
     );
 
     expect(await screen.findByTestId("studio-entry-upload-status")).toHaveTextContent(
-      "Uploading selected files to this course...",
+      "Uploading to Library and Current Run...",
     );
     (resolveUpload as unknown as (value: { id: number }) => void)({ id: 104 });
     await uploadPromise;
@@ -1920,6 +1951,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const workspace = await screen.findByTestId("studio-tldraw-workspace");
 
     await user.click(
@@ -1930,7 +1962,10 @@ describe("TutorShell studio routing", () => {
 
     expect(workspace).toHaveTextContent("1 active canvas object");
 
-    await user.click(screen.getByRole("button", { name: /clear canvas/i }));
+    await user.click(screen.getByRole("button", { name: /canvas actions/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /clear canvas/i }),
+    );
 
     expect(screen.queryByTestId("studio-source-shelf")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-workspace-panel")).not.toBeInTheDocument();
@@ -2143,6 +2178,9 @@ describe("TutorShell studio routing", () => {
       },
     });
 
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /canvas actions/i }))[0],
+    );
     const clearCanvasButton = await screen.findByRole("button", {
       name: /clear canvas/i,
     });
@@ -2158,6 +2196,9 @@ describe("TutorShell studio routing", () => {
       },
     });
 
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /canvas actions/i }))[0],
+    );
     const groupButtons = await screen.findAllByRole("button", {
       name: /group selected windows/i,
     });
@@ -2568,6 +2609,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const workspace = await screen.findByTestId("studio-tldraw-workspace");
 
     expect(workspace).toHaveTextContent("0 active canvas objects");
@@ -2583,7 +2625,7 @@ describe("TutorShell studio routing", () => {
     expect(mockTldrawEditor.createShapes).toHaveBeenCalledWith([
       expect.objectContaining({
         id: getStudioCanvasShapeId("material:101"),
-        type: "note",
+        type: "text",
       }),
     ]);
     expect(
@@ -2620,6 +2662,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const documentDock = screen.getByTestId("studio-document-dock");
     const workspace = screen.getByTestId("studio-tldraw-workspace");
 
@@ -2715,6 +2758,7 @@ describe("TutorShell studio routing", () => {
     expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
 
     const sourceShelf = screen.getByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     const documentDock = screen.getByTestId("studio-document-dock");
     const workspace = screen.getByTestId("studio-tldraw-workspace");
 
@@ -2843,7 +2887,7 @@ describe("TutorShell studio routing", () => {
             selectionLabel: "Paragraph 1",
           }),
         ),
-        type: "note",
+        type: "text",
       }),
     ]);
   });
@@ -2914,7 +2958,7 @@ describe("TutorShell studio routing", () => {
             selectionLabel: "Viewer selection",
           }),
         ),
-        type: "note",
+        type: "text",
       }),
     ]);
   });
@@ -3010,7 +3054,7 @@ describe("TutorShell studio routing", () => {
             assetUrl: previewSrc ?? "",
           }),
         ),
-        type: "note",
+        type: "text",
       }),
     ]);
   });
@@ -3119,6 +3163,50 @@ describe("TutorShell studio routing", () => {
       expect.objectContaining({
         packet_context: expect.stringContaining(
           "The learner mixed preload effects with heart-rate regulation.",
+        ),
+      }),
+    );
+  });
+
+  it("passes Workspace cards marked for Tutor into Tutor startup packet context", async () => {
+    const user = userEvent.setup();
+    const startTutorFromWorkflow = vi.fn();
+
+    renderTutorShell("priming", {
+      hubOverrides: {
+        selectedMaterials: [101],
+        chatMaterials: [
+          {
+            id: 101,
+            title: "Cardiac Output Lecture",
+            source_path: "uploads/cardio-output.pdf",
+            file_type: "pdf",
+          },
+        ],
+      },
+      workflowOverrides: {
+        startTutorFromWorkflow,
+      },
+    });
+
+    expect(await screen.findByTestId("mock-priming-panel")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /capture workspace priming note/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /Start Tutor from priming panel/i }),
+    );
+
+    expect(startTutorFromWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packet_context: expect.stringContaining("Workspace-selected objectives"),
+      }),
+    );
+    expect(startTutorFromWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packet_context: expect.stringContaining(
+          "Use selected Workspace cards as Tutor context.",
         ),
       }),
     );
@@ -3392,7 +3480,7 @@ describe("TutorShell studio routing", () => {
 
     expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /start session/i }));
+    await user.click(screen.getByTestId("tutor-start-teach"));
 
     expect(startSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -3458,7 +3546,7 @@ describe("TutorShell studio routing", () => {
 
     expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /start session/i }));
+    await user.click(screen.getByTestId("tutor-start-teach"));
 
     expect(startSession).toHaveBeenCalledWith(
       expect.objectContaining({

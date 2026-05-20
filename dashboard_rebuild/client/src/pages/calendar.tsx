@@ -1572,7 +1572,7 @@ function useCalendarPageController() {
                   <button
                     type="button"
                     className={cn(
-                      "w-full min-h-[44px] rounded-[1rem] border px-3 py-2 text-left transition-colors flex items-center justify-between gap-3",
+                      "w-full min-h-[44px] rounded-[var(--ds-r-100)] border px-3 py-2 text-left transition-colors flex items-center justify-between gap-3",
                       showLocalEvents
                         ? "border-primary/55 bg-primary/15 text-primary"
                         : "border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground",
@@ -1595,7 +1595,7 @@ function useCalendarPageController() {
                           <div
                             key={cal.id}
                             className={cn(
-                              "flex items-center gap-2 rounded-[1rem] border px-2 py-2 transition-colors",
+                              "flex items-center gap-2 rounded-[var(--ds-r-100)] border px-2 py-2 transition-colors",
                               isSelected
                                 ? "border-primary/55 bg-primary/10"
                                 : "border-primary/20 bg-black/15",
@@ -1938,7 +1938,7 @@ function useCalendarPageController() {
             <div className="mt-3 flex flex-wrap gap-2">
               <div
                 className={cn(
-                  "min-h-[44px] rounded-[1rem] border px-3 py-2 flex items-center gap-2 font-terminal text-sm",
+                  "min-h-[44px] rounded-[var(--ds-r-100)] border px-3 py-2 flex items-center gap-2 font-terminal text-sm",
                   showLocalEvents
                     ? "border-primary/45 bg-primary/12 text-primary"
                     : "border-primary/15 text-muted-foreground",
@@ -1952,7 +1952,7 @@ function useCalendarPageController() {
                 .map((cal) => (
                   <div
                     key={cal.id}
-                    className="min-h-[44px] rounded-[1rem] border border-primary/20 bg-black/25 px-3 py-2 flex items-center gap-2 font-terminal text-sm text-white"
+                    className="min-h-[44px] rounded-[var(--ds-r-100)] border border-primary/20 bg-black/25 px-3 py-2 flex items-center gap-2 font-terminal text-sm text-white"
                   >
                     <div className="h-3 w-3 rounded-full border border-white/20" style={{ backgroundColor: cal.color }} />
                     <span className="max-w-[12rem] truncate">{cal.name}</span>
@@ -1960,14 +1960,14 @@ function useCalendarPageController() {
                   </div>
                 ))}
               {hiddenCalendars.length > 0 ? (
-                <div className="min-h-[44px] rounded-[1rem] border border-primary/15 bg-black/15 px-3 py-2 flex items-center font-terminal text-sm text-muted-foreground">
+                <div className="min-h-[44px] rounded-[var(--ds-r-100)] border border-primary/15 bg-black/15 px-3 py-2 flex items-center font-terminal text-sm text-muted-foreground">
                   +{hiddenCalendars.length} hidden
                 </div>
               ) : null}
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-hidden rounded-[1.1rem] border border-primary/25 bg-black/30 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-hidden rounded-[var(--ds-radius-lg)] border border-primary/25 bg-black/30 flex flex-col">
               {/* MONTH VIEW */}
               {viewMode === 'month' && (
                 <>

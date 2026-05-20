@@ -642,12 +642,15 @@ describe("api.tutor", () => {
     );
   });
 
-  it("endSession sends POST", async () => {
+  it("endSession sends POST with advance_workflow body", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ ended: true }));
-    await api.tutor.endSession("tutor-123");
+    await api.tutor.endSession("tutor-123", { advance_workflow: false });
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/tutor/session/tutor-123/end",
-      expect.objectContaining({ method: "POST" })
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ advance_workflow: false }),
+      }),
     );
   });
 
@@ -745,10 +748,11 @@ describe("api.tutor", () => {
 
   it("getMaterials builds query string", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
-    await api.tutor.getMaterials({ course_id: 2, enabled: true });
+    await api.tutor.getMaterials({ course_id: 2, enabled: true, include_setup: true });
     const url = mockFetch.mock.calls[0][0] as string;
     expect(url).toContain("course_id=2");
     expect(url).toContain("enabled=1");
+    expect(url).toContain("include_setup=1");
   });
 
   it("uploadMaterial sends FormData via fetch", async () => {

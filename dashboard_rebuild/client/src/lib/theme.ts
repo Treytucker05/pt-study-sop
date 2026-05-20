@@ -20,7 +20,7 @@ export const SHADOW_HEADER =
 
 /** Massive radial glow for title backdrop */
 export const GLOW_TITLE_BACKDROP =
-  "bg-[radial-gradient(circle,rgba(255,84,84,0.46),transparent_72%)] blur-3xl";
+  "bg-[radial-gradient(circle,rgba(255,92,92,0.46),transparent_72%)] blur-3xl";
 
 /** Signature arcade text shadow: three-layer red glow */
 export const TEXT_SHADOW_ARCADE =
@@ -42,7 +42,7 @@ export const GLOW_ACTIVE_SUPPORT = "drop-shadow-[0_0_22px_rgba(255,74,74,0.42)]"
 
 /** Floating dock shadow for sidebar/notes trigger */
 export const SHADOW_DOCK =
-  "shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,108,138,0.2)]";
+  "shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,100,136,0.2)]";
 
 // ---------------------------------------------------------------------------
 // Typography
@@ -93,19 +93,19 @@ export const SELECT_BASE =
 
 /** Primary action button */
 export const BTN_PRIMARY =
-  "relative isolate overflow-hidden w-full min-h-[44px] rounded-[1rem] border border-[rgba(255,84,116,0.34)] bg-[radial-gradient(circle,rgba(255,84,116,0.18)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.08)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.08)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-4 font-arcade text-sm uppercase tracking-[0.22em] text-[#ffe2ea] shadow-[0_0_0_1px_rgba(255,84,116,0.22),0_12px_26px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.46)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
+  "relative isolate overflow-hidden w-full min-h-[44px] rounded-[1rem] border border-[rgba(255,84,116,0.34)] bg-[radial-gradient(circle,rgba(255,84,116,0.18)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.08)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.08)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-4 font-arcade text-sm uppercase tracking-[0.22em] text-[#ffe3ea] shadow-[0_0_0_1px_rgba(255,84,116,0.22),0_12px_26px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.46)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
 
 /** Secondary/outline button */
 export const BTN_OUTLINE =
-  "relative isolate overflow-hidden min-h-[44px] rounded-[1rem] border border-[rgba(255,84,116,0.24)] bg-[radial-gradient(circle,rgba(255,84,116,0.12)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.06)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.06)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-4 font-arcade text-sm uppercase tracking-[0.18em] text-[#ffd8e2] shadow-[0_0_0_1px_rgba(255,84,116,0.12),0_10px_22px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.38)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
+  "relative isolate overflow-hidden min-h-[44px] rounded-[1rem] border border-[rgba(255,84,116,0.24)] bg-[radial-gradient(circle,rgba(255,84,116,0.12)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.06)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.06)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-4 font-arcade text-sm uppercase tracking-[0.18em] text-[#ffd9e1] shadow-[0_0_0_1px_rgba(255,84,116,0.12),0_10px_22px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.38)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
 
 /** Toolbar toggle button (inactive) */
 export const BTN_TOOLBAR =
-  "relative isolate overflow-hidden min-h-[44px] rounded-[0.95rem] border border-[rgba(255,84,116,0.18)] bg-[radial-gradient(circle,rgba(255,84,116,0.1)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.05)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.05)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#ffccd7]/78 shadow-[0_0_0_1px_rgba(255,84,116,0.08),0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.32)] hover:bg-[size:cover,10px_10px,10px_10px] hover:text-[#ffe3ea] active:scale-[0.99] active:brightness-110";
+  "relative isolate overflow-hidden min-h-[44px] rounded-[0.95rem] border border-[rgba(255,84,116,0.18)] bg-[radial-gradient(circle,rgba(255,84,116,0.1)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.05)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.05)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#ffc8d3]/78 shadow-[0_0_0_1px_rgba(255,84,116,0.08),0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.32)] hover:bg-[size:cover,10px_10px,10px_10px] hover:text-[#ffe3ea] active:scale-[0.99] active:brightness-110";
 
 /** Toolbar toggle button (active) */
 export const BTN_TOOLBAR_ACTIVE =
-  "relative isolate overflow-hidden min-h-[44px] rounded-[0.95rem] border border-[rgba(255,84,116,0.32)] bg-[radial-gradient(circle,rgba(255,84,116,0.16)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.07)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.07)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#ffe3ea] shadow-[0_0_0_1px_rgba(255,84,116,0.18),0_0_18px_rgba(255,86,120,0.16),0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.42)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
+  "relative isolate overflow-hidden min-h-[44px] rounded-[0.95rem] border border-[rgba(255,84,116,0.32)] bg-[radial-gradient(circle,rgba(255,84,116,0.16)_0%,rgba(0,0,0,0)_95%),linear-gradient(rgba(255,84,116,0.07)_1px,transparent_1px),linear-gradient(to_right,rgba(255,84,116,0.07)_1px,transparent_1px)] bg-[size:cover,15px_15px,15px_15px] bg-center bg-no-repeat px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#ffe3ea] shadow-[0_0_0_1px_rgba(255,84,116,0.18),0_0_18px_rgba(255,84,116,0.16),0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(255,160,176,0.42)] hover:bg-[size:cover,10px_10px,10px_10px] active:scale-[0.99] active:brightness-110";
 
 // ---------------------------------------------------------------------------
 // Layout

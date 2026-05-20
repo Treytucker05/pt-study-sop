@@ -104,15 +104,15 @@ Tutor is **not a setup wizard**. It is a **Brain-launched, course-backed study w
 | **Project == Course** | In v1, every project is a thin wrapper around an existing `course_id`. No freeform projects. |
 | **Bidirectional flow** | Studio preloads and organizes material → transfers to Tutor for study. Tutor sends notes and artifacts back → Studio captures and organizes them. They feed each other. |
 
-**Current surface/workflow model:**
-- `Studio > Workspace Home`: workflow overview plus the next recommended action
-- `Studio > Workspace`: source-linked canvas, source shelf, document dock, packets, and adaptive side panels
-- `Studio > Priming`: step-based flow for setup, material scope, PRIME methods, outputs, and Tutor handoff
-- `Tutor`: live teaching against a primed bundle plus session-time capture, validation, repair signaling, and memory compaction
-- `Studio > Polish`: mandatory review, Studio organization, summarization, and QA
-- `Studio > Final Sync`: publish approved notes to Obsidian, cards to Anki, and Brain telemetry/index saves
+**Current surface/workflow model (target — see `docs/audit/TUTOR_BEHAVIOR_SPEC.md`):**
+- **Study run** (`workflow_id`): long-lived until the learner **finishes study run**; may include multiple teach legs
+- **Floating Studio** on `/tutor`: draggable panels (Source Shelf, Document Dock, Workspace, Priming, **Tutor** teach, Polish, Run Config, Memory, Notes, Obsidian, Anki)
+- **General Q&A**: always-on questions without chain/method gate; promote-only to polish
+- **Tutor** (teach mode): gated **Start Tutor** — materials + template chain or one custom method; SOP block prompts and chain advance
+- **Priming → Tutor → Polish** remains the default happy path; prime packet recommended, not required
+- **Final Sync**: optional capstone (publish); not required to close a study run in v1
 
-Tutor now uses one visible v1 surface nav. Workflow progression is contextual inside Studio instead of a second global rail competing with the main surface.
+**Domain glossary:** `CONTEXT.md`. **As-built UI audit:** `docs/audit/TUTOR_PAGE_AUDIT_2026-05-19.md`.
 
 **System boundary:**
 - **Brain owns:** broad launch orchestration, course/project selection, pre-launch context
@@ -120,17 +120,36 @@ Tutor now uses one visible v1 surface nav. Workflow progression is contextual in
 - **Library owns:** what Tutor can teach (material scope)
 - **SOP owns:** how Tutor teaches (stages, methods, chains, rules)
 
-### Screen Inventory (6 user-facing surfaces)
+### Tutor page — documentation map
 
-The Tutor page currently exposes **two visible top-level surfaces** (`Studio`, `Tutor`) with **five Studio sub-surfaces** (`Workspace Home`, `Workspace`, `Priming`, `Polish`, `Final Sync`). Every screen is listed here with its name, goal, content, and build status.
+| Doc | Purpose |
+|-----|---------|
+| `CONTEXT.md` | Domain glossary (study run, teach leg, General Q&A, transcript, working summary) |
+| `docs/audit/TUTOR_BEHAVIOR_SPEC.md` | **Target** behavior + implementation waves |
+| `docs/audit/TUTOR_PAGE_AUDIT_2026-05-19.md` | **As-built** Floating Studio inventory (2026-05) |
+| `docs/adr/0001-tutor-transcript-and-working-summary.md` | Compaction architecture decision |
 
-**Visible v1 top nav:** STUDIO | TUTOR
+### Current implementation (Floating Studio — 2026-05)
 
-Workflow movement happens inside Studio instead of through extra top-level nav modes.
+**Route:** `/tutor` — `pages/tutor.tsx` → `TutorShell` → `StudioShell` (floating panels).
+
+| Region | Components | Status |
+|--------|------------|--------|
+| Page hero | NEW SESSION / END SESSION / RESUME / REFRESH | LANDED (copy/lifecycle ≠ target spec) |
+| Top bar | `TutorTopBar` — workflow stage, previous sessions | LANDED |
+| Entry overlay | Floating Studio entry card (course, materials, Start Session) | LANDED |
+| Panels | Source Shelf, Document Dock, Workspace, Priming, Tutor chat, Polish, Run Config, Memory, Notes, Obsidian, Anki | LANDED (panel set via presets) |
+| Tutor teach | `TutorLiveStudyPane` → `TutorChat` | LANDED (single path; no General/teach split yet) |
+
+**Not mounted on main `/tutor` shell today:** `TutorWorkflowFinalSync`, `TutorArtifactsDrawer`, legacy `TutorStartPanel` / `TutorStudioMode` class-picker flows (may exist in repo but not primary path).
+
+### Deprecated screen inventory (pre–Floating Studio)
+
+The subsections below describe an **older** Tutor shell (Start Panel, Studio/Tutor top nav, 3-column chat + artifacts sidebar). Keep for historical reference only; do not use for new work.
 
 ---
 
-#### Screen 1: START PANEL
+#### Screen 1: START PANEL (legacy)
 
 | Field | Value |
 |-------|-------|
@@ -380,9 +399,16 @@ Implementation: `MessageList.tsx` lines 298-421.
 
 ### Landed vs Planned — Full Status
 
+> **Target work:** `docs/audit/TUTOR_BEHAVIOR_SPEC.md` §9 (waves 1–6). This table mixes legacy and current rows; prefer the behavior spec for new planning.
+
 | Feature | Status | Notes |
 |---------|--------|-------|
-| 4-mode shell (Studio/Tutor/Schedule/Publish) | LANDED | Mode switching, toolbar, URL params |
+| Behavior spec + ADR-0001 (transcript/summary) | ACCEPTED | Not fully implemented |
+| Floating Studio on `/tutor` | LANDED | See `TUTOR_PAGE_AUDIT_2026-05-19.md` |
+| General Q&A vs Tutor teach split | PLANNED | Wave 1 |
+| Multi teach leg per study run | PLANNED | Wave 2 |
+| Working summary compaction | PLANNED | Wave 4 per ADR-0001 |
+| 4-mode shell (Studio/Tutor/Schedule/Publish) | LEGACY / PARTIAL | Old nav; not primary Floating Studio path |
 | Start Panel (thin launch/resume) | LANDED | Replaces old wizard |
 | Shell state separation (`project_workspace_state`) | LANDED | `db_setup.py` line 2111 |
 | URL deep-linking with query params | LANDED | `tutor.tsx` lines 105-143 |

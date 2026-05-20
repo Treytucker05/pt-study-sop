@@ -1312,7 +1312,7 @@ export default function VaultHealth() {
           type="button"
           onClick={() => scanQuery.refetch()}
           disabled={scanQuery.isFetching}
-          className="min-h-[44px] rounded-[1rem] border border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-primary hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
+          className="min-h-[44px] rounded-[var(--ds-r-100)] border border-primary/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-primary hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
         >
           {scanQuery.isFetching ? (
             <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
@@ -1324,19 +1324,19 @@ export default function VaultHealth() {
         <button
           type="button"
           onClick={handleBatchEnrich}
-          className="min-h-[44px] rounded-[1rem] border border-info/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-info hover:-translate-y-0.5 hover:bg-info/10"
+          className="min-h-[44px] rounded-[var(--ds-r-100)] border border-info/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.22)_100%)] px-4 py-2 text-left font-arcade text-xs text-info hover:-translate-y-0.5 hover:bg-info/10"
         >
           <Zap className="mr-2 inline h-4 w-4" />
           BATCH ENRICH
         </button>
       </div>
 
-      <div className="space-y-3 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+      <div className="space-y-3 rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
         <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Health Snapshot
         </div>
         <div className="grid gap-2">
-          <div className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+          <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/20 p-3">
             <div className="font-terminal text-ui-xs uppercase tracking-wide text-muted-foreground">
               Affected notes
             </div>
@@ -1344,7 +1344,7 @@ export default function VaultHealth() {
               {scanData?.affected_notes ?? 0}
             </div>
           </div>
-          <div className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+          <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/20 p-3">
             <div className="font-terminal text-ui-xs uppercase tracking-wide text-muted-foreground">
               Issue instances
             </div>
@@ -1352,7 +1352,7 @@ export default function VaultHealth() {
               {scanData?.issue_instances ?? 0}
             </div>
           </div>
-          <div className="rounded-[0.95rem] border border-primary/15 bg-black/20 p-3">
+          <div className="rounded-[var(--ds-r-095)] border border-primary/15 bg-black/20 p-3">
             <div className="font-terminal text-ui-xs uppercase tracking-wide text-muted-foreground">
               Scan time
             </div>
@@ -1363,7 +1363,7 @@ export default function VaultHealth() {
         </div>
       </div>
 
-      <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+      <div className="space-y-2 rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
         <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Issue Classes
         </div>
@@ -1389,7 +1389,7 @@ export default function VaultHealth() {
         </div>
       </div>
 
-      <div className="space-y-2 rounded-[1rem] border border-primary/20 bg-black/20 p-3">
+      <div className="space-y-2 rounded-[var(--ds-r-100)] border border-primary/20 bg-black/20 p-3">
         <div className="font-arcade text-ui-xs uppercase tracking-[0.24em] text-primary/80">
           Vault Contract
         </div>

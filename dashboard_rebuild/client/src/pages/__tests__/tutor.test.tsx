@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactNode } from "react";
 
+import { expandAllSourceFolders } from "@/test/sourceShelf";
+
 const {
   getSessionMock,
   getMaterialsMock,
@@ -31,6 +33,8 @@ const {
   createWorkflowMock,
   getWorkflowMock,
   endSessionMock,
+  finishStudyRunMock,
+  resumeSessionMock,
   uploadMaterialMock,
   toastSuccessMock,
   toastErrorMock,
@@ -62,6 +66,13 @@ const {
   createWorkflowMock: vi.fn(),
   getWorkflowMock: vi.fn(),
   endSessionMock: vi.fn(),
+  finishStudyRunMock: vi.fn().mockResolvedValue({
+    workflow: { workflow_id: "wf-finished", status: "study_run_finished" },
+  }),
+  resumeSessionMock: vi.fn().mockResolvedValue({
+    session_id: "sess-recent",
+    status: "active",
+  }),
   uploadMaterialMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
@@ -336,6 +347,8 @@ vi.mock("@/lib/api", () => ({
       deleteArtifacts: vi.fn(),
       createCustomChain: vi.fn(),
       endSession: endSessionMock,
+      finishStudyRun: finishStudyRunMock,
+      resumeSession: resumeSessionMock,
       uploadMaterial: uploadMaterialMock,
       advanceBlock: vi.fn(),
       exportSession: vi.fn(),
@@ -629,6 +642,45 @@ async function openStudioPanel(label: RegExp) {
   fireEvent.click(await screen.findByRole("button", { name: label }));
 }
 
+function mockTeachPanelPrereqs(
+  courseId: number,
+  options?: {
+    materialIds?: number[];
+    topic?: string;
+    chainId?: number;
+  },
+) {
+  const materialIds = options?.materialIds ?? [101];
+  const topic = options?.topic ?? "Teach leg topic";
+  const chainId = options?.chainId ?? 99;
+  getTemplateChainsMock.mockResolvedValue([
+    { id: chainId, title: "Template chain", is_template: true, blocks: [] },
+  ]);
+  getProjectShellMock.mockResolvedValue(
+    makeProjectShell(courseId, {
+      tutor_chain_id: chainId,
+      tutor_custom_block_ids: [],
+    }),
+  );
+  localStorage.setItem(
+    "tutor.start.state.v2",
+    JSON.stringify({
+      courseId,
+      selectedMaterials: materialIds,
+      topic,
+      chainId,
+    }),
+  );
+  localStorage.setItem(
+    "tutor.selected_material_ids.v2",
+    JSON.stringify(materialIds),
+  );
+}
+
+async function clickStartTutorInPanel() {
+  fireEvent.click(await screen.findByTestId("tutor-start-teach"));
+}
+
 describe("Tutor page restore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -891,20 +943,19 @@ describe("Tutor page restore", () => {
     renderTutor();
 
     expect(await screen.findByTestId("studio-toolbar")).toBeInTheDocument();
-    // With an active session the hero button is labeled "END SESSION".
-    const sessionActionButton = await screen.findByRole("button", {
-      name: /^end session$/i,
-    });
+    const endTeachButton = await screen.findByTestId("tutor-hero-end-teach");
 
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     try {
-      fireEvent.click(sessionActionButton);
+      fireEvent.click(endTeachButton);
 
       await waitFor(() => {
         expect(confirmSpy).toHaveBeenCalled();
       });
       await waitFor(() => {
-        expect(endSessionMock).toHaveBeenCalledWith("sess-cardio");
+        expect(endSessionMock).toHaveBeenCalledWith("sess-cardio", {
+          advance_workflow: false,
+        });
       });
     } finally {
       confirmSpy.mockRestore();
@@ -936,6 +987,7 @@ describe("Tutor page restore", () => {
     expect(screen.queryByTestId("studio-entry-state")).not.toBeInTheDocument();
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Renal Physiology");
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Renal Notes");
@@ -946,7 +998,7 @@ describe("Tutor page restore", () => {
   // live session (no confirm) which is what caused "every session I start
   // gets ended so I cannot resume it". We now require an explicit confirm
   // and reflect the destructive action in the button label.
-  it("relabels the hero button to END SESSION when a tutor session is live and skips end on confirm-cancel", async () => {
+  it("shows END TEACH when a tutor session is live and skips end on confirm-cancel", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
     getContentSourcesMock.mockResolvedValue({
       courses: [{ id: 1, name: "Cardio" }],
@@ -979,12 +1031,9 @@ describe("Tutor page restore", () => {
 
     renderTutor();
 
-    const endButton = await screen.findByRole("button", {
-      name: /^end session$/i,
-    });
-    expect(
-      screen.queryByRole("button", { name: /^new session$/i }),
-    ).not.toBeInTheDocument();
+    const endButton = await screen.findByTestId("tutor-hero-end-teach");
+    expect(screen.getByTestId("tutor-hero-new-teach")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-hero-finish-study-run")).toBeInTheDocument();
 
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     try {
@@ -1001,9 +1050,7 @@ describe("Tutor page restore", () => {
     expect(toastSuccessMock).not.toHaveBeenCalledWith(
       expect.stringMatching(/Session saved to vault/i),
     );
-    expect(
-      await screen.findByRole("button", { name: /^end session$/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-hero-end-teach")).toBeInTheDocument();
   });
 
   // Audit 2026-04-22: the user's mental model of a "session" is the whole
@@ -1012,7 +1059,7 @@ describe("Tutor page restore", () => {
   // should confirm with the workflow-only message, skip endSessionById, and
   // return to the wizard. Regression guard for the bug where clicking the
   // hero in Priming silently destroyed the new workflow.
-  it("relabels the hero to END SESSION during Priming and resets via confirm without calling endSessionById", async () => {
+  it("shows FINISH STUDY RUN during Priming and closes workflow without calling endSession", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=1&mode=studio");
     getContentSourcesMock.mockResolvedValue({
       courses: [{ id: 1, name: "Cardio" }],
@@ -1070,38 +1117,26 @@ describe("Tutor page restore", () => {
       );
     });
 
-    // Workflow is active with no live tutor session → hero shows END SESSION.
-    const endButton = await screen.findByRole("button", {
-      name: /^end session$/i,
-    });
-    expect(
-      screen.queryByRole("button", { name: /^new session$/i }),
-    ).not.toBeInTheDocument();
+    const finishButton = await screen.findByTestId("tutor-hero-finish-study-run");
+    expect(screen.getByTestId("tutor-hero-new-session")).toBeInTheDocument();
 
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     try {
-      fireEvent.click(endButton);
+      fireEvent.click(finishButton);
       await waitFor(() => {
         expect(confirmSpy).toHaveBeenCalled();
       });
-      // Confirm copy must use the workflow-only message, NOT the tutor-session
-      // one, so users know Priming progress is preserved for resume.
       expect(confirmSpy).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /End the current study session\?.*Priming.*resume.*Previous Sessions/i,
-        ),
+        expect.stringMatching(/Finish study run\?.*Priming/i),
       );
     } finally {
       confirmSpy.mockRestore();
     }
 
-    // No live tutor session → endSessionById must not fire, no vault save.
+    await waitFor(() => {
+      expect(finishStudyRunMock).toHaveBeenCalledWith("wf-priming-only");
+    });
     expect(endSessionMock).not.toHaveBeenCalled();
-    expect(toastSuccessMock).not.toHaveBeenCalledWith(
-      expect.stringMatching(/Session saved to vault/i),
-    );
-
-    // Back to the wizard so the user can start or resume a workflow.
     expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
   });
 
@@ -1209,10 +1244,105 @@ describe("Tutor page restore", () => {
 
     expect(await screen.findByTestId("studio-priming-panel")).toBeInTheDocument();
     const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
     expect(sourceShelf).toHaveTextContent("Neuro");
     expect(sourceShelf).toHaveTextContent("2 materials loaded");
     expect(sourceShelf).toHaveTextContent("Neuro Lecture");
     expect(sourceShelf).toHaveTextContent("Brainstem Walkthrough");
+  });
+
+  it("keeps a Library one-file handoff as the Current Run instead of auto-selecting the whole course", async () => {
+    const user = userEvent.setup();
+
+    window.history.replaceState({}, "", "/tutor?course_id=1");
+    localStorage.setItem("tutor.selected_material_ids.v2", JSON.stringify([101]));
+    localStorage.setItem(
+      "tutor.start.state.v2",
+      JSON.stringify({
+        courseId: 1,
+        topic: "",
+        selectedMaterials: [101],
+        customBlockIds: [],
+        accuracyProfile: "strict",
+        objectiveScope: "module_all",
+        selectedObjectiveId: "",
+        selectedObjectiveGroup: "",
+        selectedPaths: [],
+      }),
+    );
+    sessionStorage.setItem("tutor.open_from_library.v1", "1");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 1, name: "Movement Science II" }],
+    });
+    getMaterialsMock.mockResolvedValue([
+      {
+        id: 101,
+        title: "MSII Topic 1 Objectives",
+        source_path: "11_Movement Science II/10_Intro/MSII Topic 1 Objectives.pdf",
+        folder_path: "11_Movement Science II/10_Intro",
+        file_type: "pdf",
+        file_size: 1024,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 102,
+        title: "Control of Human Movement",
+        source_path: "11_Movement Science II/10_Intro/Control of Human Movement.pptx",
+        folder_path: "11_Movement Science II/10_Intro",
+        file_type: "pptx",
+        file_size: 2048,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+      {
+        id: 103,
+        title: "Observational Gait Analysis",
+        source_path: "11_Movement Science II/01_Textbook/Observational Gait Analysis.pdf",
+        folder_path: "11_Movement Science II/01_Textbook",
+        file_type: "pdf",
+        file_size: 4096,
+        course_id: 1,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
+      },
+    ]);
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(1, { selected_material_ids: [102, 103] }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
+    expect(await screen.findByText("1 of 3 materials selected")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /msii topic 1 objectives/i }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: /control of human movement/i }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: /observational gait analysis/i }),
+    ).not.toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: /start session/i }));
+
+    const sourceShelf = await screen.findByTestId("studio-source-shelf");
+    await expandAllSourceFolders(sourceShelf);
+    expect(sourceShelf).toHaveTextContent("1 material loaded");
+    expect(sourceShelf).toHaveTextContent("1 materials in run");
+    expect(sourceShelf).toHaveTextContent("MSII Topic 1 Objectives");
   });
 
   it("uploads entry-card materials into the selected course and refreshes the checklist", async () => {
@@ -1751,25 +1881,10 @@ describe("Tutor page restore", () => {
     expect(screen.queryByText("RECENT WORKFLOWS")).not.toBeInTheDocument();
   });
 
-  it("starts a Tutor session directly from the Tutor panel", async () => {
+  it("surfaces teach and general actions in the Tutor panel empty state", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=77&mode=tutor");
-    getSessionMock.mockResolvedValueOnce({
-      session_id: "sess-started",
-      status: "active",
-      turn_count: 0,
-      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
-      topic: "Tutor Panel Session",
-      course_id: 77,
-      method_chain_id: null,
-      current_block_index: 0,
-      chain_blocks: [],
-      content_filter: {
-        material_ids: [],
-        accuracy_profile: "strict",
-        objective_scope: "module_all",
-      },
-      artifacts_json: "[]",
-      turns: [],
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 77, name: "Course 77" }],
     });
 
     renderTutor();
@@ -1780,16 +1895,8 @@ describe("Tutor page restore", () => {
 
     expect(await screen.findByTestId("studio-tutor-panel")).toBeInTheDocument();
     expect(screen.getByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /^start session$/i }));
-
-    await waitFor(() => {
-      expect(createSessionMock).toHaveBeenCalled();
-    });
-    await waitFor(() => {
-      expect(getSessionMock).toHaveBeenCalledWith("sess-started");
-    });
-    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-start-general-qa")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-start-teach")).toBeInTheDocument();
   });
 
   it("infers the Tutor study unit from the scoped material when starting from the panel", async () => {
@@ -1803,9 +1910,19 @@ describe("Tutor page restore", () => {
         source_path: "C:\\pt-study-sop\\brain\\data\\uploads\\b9b96302c2b9_Cardiovascular.pdf",
         file_type: "pdf",
         folder_path: "",
-        enabled: 1,
+        file_size: 1024,
+        enabled: true,
+        extraction_error: null,
+        checksum: null,
+        created_at: new Date("2026-03-10T00:00:00Z").toISOString(),
+        updated_at: null,
       },
     ]);
+    mockTeachPanelPrereqs(1, {
+      materialIds: [561],
+      topic: "Cardiovascular",
+      chainId: 99,
+    });
     getContentSourcesMock.mockResolvedValue({
       courses: [{ id: 1, name: "Exercise Physiology" }],
     });
@@ -1851,13 +1968,15 @@ describe("Tutor page restore", () => {
     await openStudioPanel(/open tutor panel/i);
     expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /^start session$/i }));
+    await clickStartTutorInPanel();
 
     await waitFor(() => {
-      expect(preflightSessionMock).toHaveBeenCalledWith(
+      expect(createSessionMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          course_id: 1,
           topic: "Cardiovascular",
-          study_unit: "Cardiovascular",
+          teach_leg_label: "Cardiovascular",
+          session_kind: "tutor",
           module_name: "Cardiovascular",
           content_filter: expect.objectContaining({
             material_ids: [561],
@@ -1873,6 +1992,9 @@ describe("Tutor page restore", () => {
 
   it("does not surface a completed backend session as a live Tutor session", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=77&mode=tutor");
+    getContentSourcesMock.mockResolvedValue({
+      courses: [{ id: 77, name: "Course 77" }],
+    });
     getProjectShellMock.mockResolvedValue(
       makeProjectShell(77, {
         last_mode: "tutor",
@@ -1905,9 +2027,7 @@ describe("Tutor page restore", () => {
     });
     fireEvent.click(await screen.findByRole("button", { name: /open tutor panel/i }));
     expect(await screen.findByTestId("studio-tutor-panel")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /^start session$/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-start-teach")).toBeInTheDocument();
     expect(screen.queryByText("LIVE SESSION")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tutor-chat")).not.toBeInTheDocument();
   });
@@ -1933,7 +2053,7 @@ describe("Tutor page restore", () => {
 
   it("resumes the most recent Tutor session from Studio", async () => {
     window.history.replaceState({}, "", "/tutor?course_id=77&mode=studio");
-    getHubMock.mockResolvedValueOnce({
+    getHubMock.mockResolvedValue({
       ...makeTutorHub(),
       resume_candidate: {
         can_resume: true,
@@ -1949,38 +2069,38 @@ describe("Tutor page restore", () => {
         action_label: "Resume Neuro tutor session",
       },
     });
-    getSessionMock.mockResolvedValueOnce({
+    getSessionMock.mockResolvedValue({
       session_id: "sess-recent",
       status: "active",
       turn_count: 2,
       started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
       topic: "Recent Session",
       course_id: 7,
-      method_chain_id: null,
+      method_chain_id: 99,
       current_block_index: 0,
       chain_blocks: [],
       content_filter: {
-        material_ids: [],
+        material_ids: [101],
         accuracy_profile: "strict",
         objective_scope: "module_all",
+        session_kind: "tutor",
       },
       artifacts_json: "[]",
-      turns: [],
+      turns: [{ role: "user", content: "hello" }],
     });
 
     renderTutor();
 
     await openStudioPanel(/open tutor panel/i);
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: /resume session/i,
-      }),
-    );
+    fireEvent.click(await screen.findByTestId("tutor-resume-session"));
 
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-recent");
     });
-    expect(await screen.findByTestId("tutor-chat")).toBeInTheDocument();
+    expect(resumeSessionMock).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith("Session resumed");
+    });
   });
 
   it("restores an explicit session_id query before local startup state", async () => {
@@ -2567,7 +2687,7 @@ describe("Tutor page restore", () => {
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith("sess-stale");
     });
-    await expectStudioEntryState();
+    expect(await screen.findByTestId("studio-shell")).toBeInTheDocument();
     expect(screen.queryByTestId("tutor-launch-hub")).not.toBeInTheDocument();
     expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });

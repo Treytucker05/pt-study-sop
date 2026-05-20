@@ -992,6 +992,8 @@ export interface TutorSessionPreflightRequest {
     focus_objective_id?: string;
     vault_folder?: string;
     memory_capsule_context?: string;
+    session_kind?: "general" | "tutor";
+    teach_leg_label?: string;
     force_full_docs?: boolean;
     default_mode?: {
       materials?: boolean;
@@ -1087,6 +1089,9 @@ export interface TutorCreateSessionRequest {
     };
   };
   method_chain_id?: number;
+  workflow_id?: string;
+  session_kind?: "general" | "tutor";
+  teach_leg_label?: string;
   packet_context?: string;
   memory_capsule_context?: string;
 }
@@ -2015,6 +2020,58 @@ export interface TutorWorkflowDetailResponse {
   publish_results: TutorPublishResult[];
 }
 
+export interface TutorTeachLeg {
+  session_id: string;
+  teach_leg_label: string;
+  topic?: string | null;
+  status?: string | null;
+  turn_count?: number;
+  started_at?: string | null;
+  ended_at?: string | null;
+  is_active?: boolean;
+}
+
+export interface TutorTeachLegsResponse {
+  workflow_id: string;
+  teach_legs: TutorTeachLeg[];
+  count: number;
+}
+
+export interface TutorWorkingSummary {
+  id: number;
+  tutor_session_id: string;
+  version: number;
+  summary_text: string;
+  trigger_source?: string;
+  created_at: string;
+}
+
+export interface TutorCompactSessionResponse {
+  session_id: string;
+  working_summary: TutorWorkingSummary;
+  tutor_turn_count: number;
+  transcript_turn_count: number;
+  polish_draft?: TutorPolishDraft | null;
+}
+
+export interface TutorPolishDraft {
+  id: number;
+  workflow_id: string;
+  tutor_session_id?: string | null;
+  teach_leg_label?: string | null;
+  kind: "checkpoint" | "final" | string;
+  status: string;
+  content?: { markdown?: string };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TutorPolishDraftsResponse {
+  workflow_id: string;
+  drafts: TutorPolishDraft[];
+  count: number;
+}
+
 export interface TutorStudioOverviewCardDraft {
   id: number;
   sessionId: string | null;
@@ -2227,12 +2284,13 @@ export interface TutorEmbedResult {
 }
 
 export interface TutorSyncPreviewPayload {
-  folder_path: string;
+  folder_path?: string;
   allowed_exts?: string[];
 }
 
 export interface TutorSyncStartPayload extends TutorSyncPreviewPayload {
   selected_files?: string[];
+  setup_files?: string[];
   course_id?: number | null;
 }
 
@@ -2263,6 +2321,7 @@ export interface TutorSyncStartResult {
   job_id: string;
   folder?: string;
   selected_count?: number | null;
+  setup_count?: number | null;
   course_id?: number | null;
 }
 
@@ -2276,6 +2335,7 @@ export interface SemesterIntakeFile {
 
 export interface SemesterIntakeCoursePreview {
   name: string;
+  code?: string | null;
   folder_path: string;
   course_id?: number;
   syllabus_files: SemesterIntakeFile[];
@@ -2443,6 +2503,11 @@ export interface Material {
   title: string | null;
   source_path: string | null;
   folder_path: string | null;
+  corpus?: string | null;
+  doc_type?: string | null;
+  topic_tags?: string | null;
+  material_role?: "study" | "setup" | "reference" | string | null;
+  setup_kind?: "syllabus" | "schedule" | "syllabus_schedule" | "course_setup" | string | null;
   file_type: string | null;
   file_size: number | null;
   course_id: number | null;
@@ -2479,6 +2544,8 @@ export interface MaterialUploadResponse {
   file_size: number;
   char_count: number;
   embedded: boolean;
+  library_role?: string | null;
+  setup_kind?: string | null;
   duplicate_of: { id: number; title: string } | null;
 }
 

@@ -1,6 +1,110 @@
 # Design System: PT Study OS
 
+## Active Site Source Map
+
+This is the current source map for the React dashboard. Edit source files only; built files under `brain/static/dist/` are generated output.
+
+### App Shell
+
+* `dashboard_rebuild/client/src/main.tsx` — React entrypoint; imports `App` and the active global stylesheet.
+* `dashboard_rebuild/client/src/App.tsx` — route table; maps `/library` to `dashboard_rebuild/client/src/pages/library.tsx`.
+* `dashboard_rebuild/client/src/components/layout.tsx` — global cockpit shell, top navigation, support nav image placement, notes dock, and the `page-hero-portal` that page heroes render into.
+* `dashboard_rebuild/client/src/components/PageScaffold.tsx` — shared page hero, title/subtitle/stat rail, and content wrapper used by Library and the other support pages.
+
+### Active Styling
+
+* `dashboard_rebuild/client/src/index.css` — active global CSS, Tailwind theme tokens, base font scale, `page-shell` styling, `brain-workspace` frame styling, and responsive shell behavior.
+* `dashboard_rebuild/client/src/lib/theme.ts` — shared Tailwind class tokens for typography, inputs, buttons, panels, icons, and semantic status colors.
+* `dashboard_rebuild/client/src/lib/utils.ts` — `cn()` class merge helper used across the UI.
+* `dashboard_rebuild/client/src/components/ui/HudPanel.tsx` — shared HUD panel primitive; pulls border/panel classes from `theme.ts`.
+* `dashboard_rebuild/client/src/components/ui/HudButton.tsx` — shared HUD button primitive; pulls primary/outline button classes from `theme.ts`.
+* `dashboard_rebuild/client/src/components/ui/badge.tsx`, `dashboard_rebuild/client/src/components/ui/checkbox.tsx`, and `dashboard_rebuild/client/src/components/ui/dialog.tsx` — shared UI primitives used by Library rows, file selection, and modals.
+
+### Library Page
+
+* `dashboard_rebuild/client/src/pages/library.tsx` — main Library controller and page design. This file owns the visible `/library` layout: folder/course rail, Semester Intake preview/apply, upload, folder sync, material table, Tutor handoff queue, cleanup controls, add-course modal, and material preview modal.
+* `dashboard_rebuild/client/src/components/MaterialUploader.tsx` — direct file-upload dropzone embedded inside Library.
+* `dashboard_rebuild/client/src/lib/tutorClientState.ts` — local/session storage handoff state between Library and Tutor.
+* `dashboard_rebuild/client/src/api.ts` — frontend API client for courses, semester intake, Tutor material upload/list/update/delete/re-extract/content, folder sync preview/apply/status, embed status, and Tutor handoff data.
+* `dashboard_rebuild/client/src/lib/api.ts` — compatibility re-export of `src/api.ts`.
+* `dashboard_rebuild/client/src/api.types.ts` — generated/central frontend API type surface used by Tutor and Library contracts.
+* `shared/schema.ts` — shared course/material schema types consumed by the frontend.
+
+### Library Backend
+
+* `brain/dashboard/api_semester_intake.py` — `/api/semester-intake/preview` and `/api/semester-intake/apply`; classifies the PT School folder and applies selected course/material intake.
+* `brain/dashboard/api_tutor_materials.py` — `/api/tutor/materials/*`; upload, list, update, delete, content preview, folder sync preview/apply/status, extracted assets, video processing, and embed linkage.
+* `brain/dashboard/api_adapter.py` — `/api/courses/*`; course list/create/update/archive/unarchive/delete used by the Library course rail and forms.
+* `brain/dashboard/api_tutor.py` — Tutor blueprint registration hub that wires material routes into the app.
+* `brain/dashboard/app.py` and `brain/dashboard/routes.py` — Flask app/React catch-all wiring that serves `/library` from the built frontend.
+
+### Tests That Protect Library
+
+* `dashboard_rebuild/client/src/pages/__tests__/library.test.tsx` — primary Library UI/unit coverage.
+* `dashboard_rebuild/client/src/pages/__tests__/tutor.workspace.integration.test.tsx` and `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx` — protect Library-to-Tutor handoff behavior.
+* `brain/tests/test_semester_intake.py` — backend Semester Intake classification/apply behavior.
+* `brain/tests/test_tutor_material_pipeline_certification.py` — backend material sync/embed pipeline behavior.
+
+### Reference / Not Active By Default
+
+* `dashboard_rebuild/client/src/styles/theme.css`, `dashboard_rebuild/client/src/styles/hud-theme.css`, `dashboard_rebuild/client/src/styles/hud-components.css`, `dashboard_rebuild/client/src/styles/hud-variants.css`, and `dashboard_rebuild/client/src/styles/hud-wrappers.css` are currently theme-lab/reference styles unless imported by the main app.
+* `dashboard_rebuild/client/theme-lab/*` is a design playground, not the live `/library` page.
+* `docs/stitch-designs/*`, `docs/design/*`, and `wireframe/*` are visual references and prototypes.
+
+## Library Design Direction
+
+Library is the study-material operations page. It should answer three questions in order:
+
+1. What course am I organizing?
+2. What files were found and what do they mean?
+3. What is selected and ready to send to Tutor?
+
+The Library page should be course-first and file-explicit. Folder scans are review/classification steps, not permission to load every file. Course names should be primary; PHYT/course codes are secondary metadata only.
+
+Preferred flow:
+
+1. Pick or scan a source.
+2. Review courses and file classifications.
+3. Select only the files to load.
+4. Apply selected files.
+5. Confirm material readiness.
+6. Hand selected material to Tutor.
+
+Visual direction for Library: keep the PT Study cockpit identity, but use calmer operations hierarchy than the live Tutor surface. Red is an accent and active-state signal, not the whole page. Use graphite/black surfaces, muted crimson structure, teal/green for ready, amber for missing/review, and blue/cyan for sync/information.
+
+Avoid:
+
+* Redundant panels that repeat the same readiness signal.
+* Hidden bulk actions that look like the normal next step.
+* Course-code-first labels when the learner needs course names.
+* Loading folder contents without an explicit file selection step.
+* Editing `brain/static/dist/` directly.
+
 ## Philosophy & Metadata
+
+### Canonical Naming
+
+These three names refer to **different things** and must not be used interchangeably:
+
+| Name | Refers to | Used in |
+|------|-----------|---------|
+| **PT Study OS** | The product/application | Product docs, page titles |
+| **Neural Command Deck** | The design system / UI layer | Code-facing (`theme.ts`), this document |
+| **Premium Cyberpunk / Sci-Fi Cockpit** | The visual aesthetic/mood | Design discussion only |
+
+When referring to the design system in code comments or docs, use **Neural Command Deck** (this matches `dashboard_rebuild/client/src/lib/theme.ts`).
+
+### Source of Truth
+
+This document is **design direction**. The authoritative token values live in code and win on any conflict:
+
+*   `dashboard_rebuild/client/src/index.css` — CSS custom properties, Tailwind `@theme`, font scale.
+*   `dashboard_rebuild/client/src/lib/theme.ts` — shared Tailwind class-token constants.
+
+Known gaps between this doc and the code (being reconciled — see notes inline below): radius tokens, legacy flicker animations, extra display fonts. Do not treat this doc as describing a finished state.
+
+### Metadata
+
 *   **Project:** PT Study OS
 *   **Theme:** Premium Cyberpunk / High-Fidelity Sci-Fi Cockpit.
 *   **Philosophy:** The interface should feel like a high-end, tactile operating system from a sci-fi universe. We are moving away from plain, flat boxes and annoying CRT "flickers" toward deep, layered glassmorphism, intense neon glows, and smooth physical motion. Every window, button, and panel must feel custom-built, mirroring the intense "touch" and polish of the main navigation bar.
@@ -18,14 +122,17 @@
 *   **Header & Core UI (Arcade):** `'Press Start 2P'` (`font-arcade`). Used strictly for primary system titles, major buttons, and high-level navigation. Must be uppercase, widely tracked (letter-spacing), and often accompanied by a subtle neon text-shadow.
 *   **Data & Body (Terminal):** `'VT323'` (`font-terminal`). Used for readouts, secondary copy, input fields, and standard data display. Should remain highly legible.
 *   *Note: If readability suffers in large blocks of text, use a clean, modern monospace like `JetBrains Mono` or `Oxanium` as a fallback, but the primary aesthetic is terminal/arcade.*
+*   **⚠️ Known gap (font set):** `index.css` currently also imports and declares `Orbitron`, `Audiowide`, and `Oxanium` (`--font-orbitron/audiowide/oxanium`) beyond the documented stack, and at least one base rule applies `var(--font-oxanium)` rather than the documented `VT323` body font. The intended canonical stack is Press Start 2P (`font-arcade`) + VT323 (`font-terminal`) with JetBrains Mono / Oxanium as the only sanctioned fallbacks. Trimming the extra display fonts is a reviewed visual change (see "Deferred visual changes").
 
 ### Borders & Geometry
 *   **The "Custom" Feel:** Avoid plain, sharp 0px boxes.
 *   **Radii:** Use custom, deliberate border-radii. For example, rounded outer shells (e.g., `rounded-[1.4rem]`) paired with sharp inner elements, or specific clipped corners to simulate physical hardware.
+*   **⚠️ Known gap (radius tokens):** `--radius-sm/md/lg` in `index.css` are currently all `0px` — they do **not** reflect this guidance and are effectively unused (the codebase uses ad-hoc `rounded-[…]` arbitrary values in ~17 distinct sizes instead). A canonical radius scale is being introduced into the token layer, initialized to the existing dominant values so the change renders pixel-identically. New code should consume the radius scale, not arbitrary `rounded-[…]` values, once it lands.
 *   **Borders:** Utilize layered borders (e.g., `border border-red-500/28` or `border-double` for specific terminal windows). Use CSS `::before` and `::after` pseudo-elements to create inner bezels or glowing frames, just like the Notes Dock.
 
 ### Motion & Interaction (No Flicker)
-*   **No CRT Flicker:** Remove harsh, instantaneous flashing or scanning animations.
+*   **No CRT Flicker:** Do not use harsh, instantaneous flashing or scanning animations in new code.
+*   **⚠️ Known gap (legacy flicker animations):** `index.css` still defines `--animate-flicker`, `phosphor-flicker`, and `scanline` keyframes, and a `crt-hover` class is still referenced in `badge.tsx`. These are **deprecated legacy** and contradict the directive above. They are *not* removed yet because removing an animation that is still applied somewhere is a visible change — removal is tracked as a reviewed visual change (see "Deferred visual changes"). Until then: do not add new usages.
 *   **Tactile Hover States:** Hovering interactive elements should trigger smooth, pronounced shifts in `brightness`, `saturate`, and `drop-shadow`. (e.g., scaling up to `1.025`, translating Y slightly, and blooming a colored shadow).
 *   **Fluid Physics:** Use smooth `ease-out` or spring curves for opening panels, expanding sheets, or revealing the main workspace. It should feel like heavy, expensive machinery locking into place.
 
@@ -44,6 +151,18 @@
 ### Navigation & Docks
 *   The main desktop nav is the benchmark: layered imagery, absolute positioning for complex overlapping (like the Brain logos), and intense hover states.
 *   Side docks (like the Quick Notes handle) should use complex CSS gradients and pseudo-elements to look like physical, metallic, or glass pull-tabs extending from the edge of the screen.
+
+## Deferred Visual Changes
+
+These are known consistency problems whose fixes **change rendered pixels**, so they are intentionally *not* applied during the pixel-identical token-convergence work. Each is a discrete, reviewable design decision:
+
+1. **Collapse the color palette** — multiple uncoordinated reds (`#CC2E48` token vs. `rgba(255,84,116)` vs. `rgba(255,74,74)` vs. `rgba(220,38,38)` vs. `#ffe2ea/#ffd8e2/#ffccd7`) → one primary + defined tints.
+2. **Collapse the radius scale** — ~17 distinct arbitrary radii → one 3–4 step scale.
+3. **Remove legacy flicker** — delete `--animate-flicker`, `phosphor-flicker`, `scanline`, `crt-hover` (per Motion directive).
+4. **Trim the font set** — remove `Orbitron`/`Audiowide`/extra `Oxanium` usage; restore the canonical Press Start 2P + VT323 stack.
+5. **Make `destructive` visually distinct** — the shadcn `button.tsx` `destructive` variant currently renders nearly identical to `default` (accessibility issue).
+
+Token-convergence work routes every value through tokens *at its current value* first (pixel-identical, verifiable via compiled-CSS diff); the above are then a small set of token-value edits to be approved one at a time.
 
 ## Execution Directives for AI Agents
 When generating or modifying UI components for this project:

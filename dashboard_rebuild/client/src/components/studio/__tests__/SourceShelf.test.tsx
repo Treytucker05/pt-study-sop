@@ -5,15 +5,26 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourceShelf } from "@/components/studio/SourceShelf";
+import { expandAllSourceFolders } from "@/test/sourceShelf";
 import type { Material } from "@/lib/api";
 import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
 const getObsidianFilesMock = vi.fn();
+const startSyncMock = vi.fn();
+const getSyncStatusMock = vi.fn();
+const previewSyncMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
     obsidian: {
       getFiles: (...args: unknown[]) => getObsidianFilesMock(...args),
+    },
+    tutor: {
+      previewSyncMaterialsFolder: (...args: unknown[]) =>
+        previewSyncMock(...args),
+      startSyncMaterialsFolder: (...args: unknown[]) => startSyncMock(...args),
+      getSyncMaterialsStatus: (...args: unknown[]) =>
+        getSyncStatusMock(...args),
     },
   },
 }));
@@ -135,6 +146,15 @@ describe("SourceShelf", () => {
   beforeEach(() => {
     getObsidianFilesMock.mockReset();
     getObsidianFilesMock.mockResolvedValue({ success: true, files: [] });
+    startSyncMock.mockReset();
+    getSyncStatusMock.mockReset();
+    previewSyncMock.mockReset();
+    previewSyncMock.mockResolvedValue({
+      ok: true,
+      folder: "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      tree: { type: "folder", name: "PT School", path: "", children: [] },
+      counts: { folders: 2, files: 5 },
+    });
   });
 
   it("renders one searchable tree, filters it in real time, and cascades course checkbox selection", async () => {
@@ -142,6 +162,7 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness();
 
     const shelf = screen.getByTestId("source-shelf-content");
+    await expandAllSourceFolders(shelf);
     expect(within(shelf).getByRole("button", { name: /^all$/i })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -205,6 +226,7 @@ describe("SourceShelf", () => {
         "Exercise Physiology/Week 7",
       ),
     );
+    await expandAllSourceFolders(shelf);
 
     expect(
       await within(shelf).findByText("Cardio.md", undefined, { timeout: 3000 }),
@@ -223,9 +245,11 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness();
 
     const shelf = screen.getByTestId("source-shelf-content");
+    await expandAllSourceFolders(shelf);
     await user.click(within(shelf).getByRole("button", { name: /^library$/i }));
 
     const input = within(shelf).getByTestId("source-shelf-upload-input");
+    await expandAllSourceFolders(shelf);
     await user.upload(
       input,
       new File(["alpha"], "Hemodynamics Notes.txt", { type: "text/plain" }),
@@ -249,6 +273,7 @@ describe("SourceShelf", () => {
     renderSourceShelfHarness({ onOpenInDocumentDock });
 
     const shelf = screen.getByTestId("source-shelf-content");
+    await expandAllSourceFolders(shelf);
     const checkbox = within(shelf).getByRole("checkbox", {
       name: /include cardiac output lecture in current run/i,
     });
@@ -281,8 +306,10 @@ describe("SourceShelf", () => {
     });
 
     await waitFor(() => {
-      expect(allFilterButton).toHaveClass("text-white");
-      expect(vaultFilterButton).toHaveClass("text-foreground/82");
+      // Flat-modern palette: active filter is brighter neutral, inactive is
+      // dim neutral (was arcade pink/white).
+      expect(allFilterButton).toHaveClass("text-zinc-200");
+      expect(vaultFilterButton).toHaveClass("text-zinc-400");
       expect(courseFolderRow.tagName).toBe("BUTTON");
       expect(courseFolderRow).toHaveClass(
         "bg-transparent",
@@ -337,6 +364,12 @@ describe("SourceShelf", () => {
 
     const shelf = screen.getByTestId("source-shelf-content");
 
+    // Folders now start collapsed (user preference) and materials nest by
+    // their real folder hierarchy (folder_path → "Uploaded Files" here),
+    // not one flat "Library" bucket. Expand every folder structure-
+    // independently to reach the leaf before asserting on its rendered name.
+    await expandAllSourceFolders(shelf);
+
     // Basename is displayed as the leaf detail.
     expect(
       within(shelf).getByText("b9b96302c2b9_Cardiovascular.pdf"),
@@ -365,5 +398,60 @@ describe("SourceShelf", () => {
       'button[aria-label="Open Cardiovascular in Document Dock"]',
     );
     expect(openButton).not.toBeNull();
+  });
+
+  // The Root Folder ↔ Library disconnect: instead of re-uploading every
+  // file, "Sync Root Folder" re-indexes the configured root in place.
+  it("syncs the Root Folder in place without re-uploading material", async () => {
+    const user = userEvent.setup();
+    startSyncMock.mockResolvedValue({ job_id: "job-1" });
+    getSyncStatusMock.mockResolvedValue({
+      job_id: "job-1",
+      status: "completed",
+      sync_result: { processed: 3 },
+    });
+
+    renderSourceShelfHarness();
+
+    const shelf = screen.getByTestId("source-shelf-content");
+
+    // The resolved Root Folder is shown so the user can verify it.
+    expect(
+      await within(shelf).findByText(
+        "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+      ),
+    ).toBeInTheDocument();
+
+    const syncButton = within(shelf).getByRole("button", {
+      name: /sync root folder/i,
+    });
+    // Button stays disabled until the Root Folder resolves.
+    await waitFor(() => expect(syncButton).not.toBeDisabled());
+    await user.click(syncButton);
+
+    // The resolved folder is passed explicitly (not a silent env
+    // fallback). course_id is null on purpose: a whole-Root-Folder sync
+    // spans many classes, so the backend must auto-link each file to its
+    // own course by folder name — pinning the open course is the bug
+    // that collapsed everything into one class.
+    await waitFor(() =>
+      expect(startSyncMock).toHaveBeenCalledWith({
+        folder_path:
+          "/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School",
+        course_id: null,
+      }),
+    );
+    await waitFor(
+      () => expect(getSyncStatusMock).toHaveBeenCalledWith("job-1"),
+      { timeout: 3000 },
+    );
+    // Button returns to its idle label once the job completes.
+    await waitFor(
+      () =>
+        expect(
+          within(shelf).getByRole("button", { name: /sync root folder/i }),
+        ).not.toBeDisabled(),
+      { timeout: 3000 },
+    );
   });
 });

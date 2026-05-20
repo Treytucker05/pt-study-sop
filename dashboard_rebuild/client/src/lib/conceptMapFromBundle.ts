@@ -30,11 +30,14 @@ function normalize(text: string | null | undefined): string {
  * when we can't find connections — returns a node-only graph rather than
  * breaking.
  */
-export function buildConceptMapFromBundle(
-  bundle: SessionMaterialBundle,
-): string {
+export type ConceptGraph = {
+  nodes: { id: string; label: string }[];
+  edges: { from: string; to: string }[];
+};
+
+function computeConceptGraph(bundle: SessionMaterialBundle): ConceptGraph {
   const concepts = bundle.concepts.slice(0, MAX_NODES);
-  if (concepts.length === 0) return "";
+  if (concepts.length === 0) return { nodes: [], edges: [] };
 
   const idByConcept = new Map<string, string>();
   concepts.forEach((c, idx) => {
@@ -102,10 +105,35 @@ export function buildConceptMapFromBundle(
     if (edges.length >= MAX_EDGES) break;
   }
 
+  const nodes = concepts.map((c, idx) => ({
+    id: safeId(idx),
+    label: escapeLabel(c.concept),
+  }));
+  return { nodes, edges };
+}
+
+/** Structured concept graph (nodes + edges) for canvas/native consumers. */
+export function buildConceptGraphFromBundle(
+  bundle: SessionMaterialBundle,
+): ConceptGraph {
+  return computeConceptGraph(bundle);
+}
+
+/**
+ * Build a Mermaid flowchart from a SessionMaterialBundle. Output is
+ * byte-identical to the previous implementation (renders the shared
+ * computeConceptGraph result), so existing Mermaid consumers/tests are
+ * unaffected.
+ */
+export function buildConceptMapFromBundle(
+  bundle: SessionMaterialBundle,
+): string {
+  const { nodes, edges } = computeConceptGraph(bundle);
+  if (nodes.length === 0) return "";
   const lines: string[] = ["flowchart LR"];
-  concepts.forEach((c, idx) => {
-    lines.push(`  ${safeId(idx)}[${escapeLabel(c.concept)}]`);
-  });
+  for (const node of nodes) {
+    lines.push(`  ${node.id}[${node.label}]`);
+  }
   for (const edge of edges) {
     lines.push(`  ${edge.from} --> ${edge.to}`);
   }

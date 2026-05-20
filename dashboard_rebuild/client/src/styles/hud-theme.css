@@ -3,24 +3,24 @@
 
 :root {
   /* —— Canvas & surfaces —— */
-  --hud-color-bg-void: #030304;
-  --hud-color-bg-base: #050507;
-  --hud-color-bg-raised: #0a0a0f;
+  --hud-color-bg-void: #000000;
+  --hud-color-bg-base: #08080c;
+  --hud-color-bg-raised: #08080c;
   --hud-color-surface-a: #0e0e16;
   --hud-color-surface-b: #12121c;
-  --hud-color-surface-c: #161621;
-  --hud-color-surface-inset: #08080e;
+  --hud-color-surface-c: #12121c;
+  --hud-color-surface-inset: #08080c;
   --hud-color-surface-glass: color-mix(in srgb, var(--hud-color-surface-a) 82%, transparent);
 
   /* —— Accent (crimson; never primary blue) —— */
-  --hud-color-accent: #ff4d6d;
-  --hud-color-accent-bright: #ff6b85;
+  --hud-color-accent: #ff5474;
+  --hud-color-accent-bright: #fb7185;
   --hud-color-accent-deep: #e63d5c;
-  --hud-color-accent-muted: rgba(255, 77, 109, 0.55);
-  --hud-color-accent-dim: rgba(255, 77, 109, 0.12);
-  --hud-color-accent-dim-strong: rgba(255, 77, 109, 0.22);
-  --hud-color-accent-line: rgba(255, 77, 109, 0.38);
-  --hud-color-accent-glow: rgba(255, 77, 109, 0.45);
+  --hud-color-accent-muted: rgba(255,84,116,0.55);
+  --hud-color-accent-dim: rgba(255,84,116,0.12);
+  --hud-color-accent-dim-strong: rgba(255,84,116,0.22);
+  --hud-color-accent-line: rgba(255,84,116,0.38);
+  --hud-color-accent-glow: rgba(255,84,116,0.45);
 
   /* —— Semantic (support only; accent stays red) —— */
   --hud-color-success: #5ee9b5;
@@ -40,7 +40,7 @@
   --hud-color-text-accent: var(--hud-color-accent-bright);
 
   /* —— Borders —— */
-  --hud-border-default: rgba(255, 77, 109, 0.32);
+  --hud-border-default: rgba(255,84,116,0.32);
   --hud-border-subtle: rgba(255, 255, 255, 0.06);
   --hud-border-muted: rgba(255, 255, 255, 0.1);
   --hud-border-strong: rgba(255, 255, 255, 0.14);
@@ -48,12 +48,12 @@
   --hud-border-focus: var(--hud-color-accent-line);
 
   /* —— Glow —— */
-  --hud-glow-xs: 0 0 8px rgba(255, 77, 109, 0.12);
-  --hud-glow-sm: 0 0 14px rgba(255, 77, 109, 0.18);
-  --hud-glow-md: 0 0 28px rgba(255, 77, 109, 0.22);
-  --hud-glow-lg: 0 0 48px rgba(255, 77, 109, 0.15);
+  --hud-glow-xs: 0 0 8px rgba(255,84,116,0.12);
+  --hud-glow-sm: 0 0 14px rgba(255,84,116,0.18);
+  --hud-glow-md: 0 0 28px rgba(255,84,116,0.22);
+  --hud-glow-lg: 0 0 48px rgba(255,84,116,0.15);
   --hud-glow-inset-accent: inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(255, 60, 90, 0.08);
+    inset 0 -1px 0 rgba(255,52,92,0.08);
 
   /* —— Shadows —— */
   --hud-shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -103,8 +103,8 @@
   --hud-z-overlay: 30;
 
   /* —— Background treatments (compose in demos / app shell) —— */
-  --hud-bg-app: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 77, 109, 0.09), transparent 42%),
-    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(255, 40, 60, 0.04), transparent 50%),
+  --hud-bg-app: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255,84,116,0.09), transparent 42%),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(255,35,60,0.04), transparent 50%),
     linear-gradient(180deg, var(--hud-color-bg-raised) 0%, var(--hud-color-bg-base) 45%, var(--hud-color-bg-void) 100%);
   --hud-bg-panel-shine: linear-gradient(
     145deg,
@@ -112,8 +112,8 @@
     transparent 42%,
     transparent 100%
   );
-  --hud-bg-grid-faint: linear-gradient(rgba(255, 77, 109, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 77, 109, 0.03) 1px, transparent 1px);
+  --hud-bg-grid-faint: linear-gradient(rgba(255,84,116,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,84,116,0.03) 1px, transparent 1px);
   --hud-bg-grid-size: 24px 24px;
 
   /* Legacy aliases (theme-lab + earlier tokens) */

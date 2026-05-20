@@ -9,7 +9,6 @@ import type {
   TutorProjectShellResponse,
   TutorScholarStrategy,
   TutorSessionEndResult,
-  TutorSessionPreflightResponse,
   TutorSessionWithTurns,
   TutorStrategyFeedback,
   TutorTurn,
@@ -199,7 +198,7 @@ export function useTutorSession({
   const [stageTimerDisplaySeconds, setStageTimerDisplaySeconds] = useState(0);
   const stageTimerSessionRef = useRef<string | null>(null);
 
-  // ─── Preflight ───
+  // ─── Workspace Context ───
   const preflightPayload = useMemo(() => {
     if (typeof hub.courseId !== "number") return null;
     const learningObjectives =
@@ -245,26 +244,9 @@ export function useTutorSession({
     workflowPrimingObjectives,
   ]);
 
-  const {
-    data: preflight,
-    isFetching: preflightLoading,
-    error: preflightError,
-  } = useQuery<TutorSessionPreflightResponse>({
-    queryKey: [
-      "tutor-session-preflight",
-      JSON.stringify(preflightPayload || {}),
-    ],
-    queryFn: () => api.tutor.preflightSession(preflightPayload!),
-    enabled: !!preflightPayload && hub.selectedMaterials.length > 0,
-    staleTime: 30 * 1000,
-  });
-
-  const preflightErrorMessage =
-    preflightError instanceof Error
-      ? preflightError.message
-      : preflightError
-        ? String(preflightError)
-        : null;
+  const preflight = null;
+  const preflightLoading = false;
+  const preflightErrorMessage = null;
 
   // ─── Config check ───
   const { data: configStatus } = useQuery<TutorConfigCheck>({
@@ -459,7 +441,10 @@ export function useTutorSession({
   );
 
   // ─── End session ───
-  const endSessionById = useCallback(async (sessionId: string) => {
+  const endSessionById = useCallback(async (
+    sessionId: string,
+    options?: { advanceWorkflow?: boolean },
+  ) => {
     if (sessionId === activeSessionId && stageTimerRunning && stageTimerStartedAt) {
       try {
         await persistStageTimeSlice("session_end", [
@@ -469,7 +454,9 @@ export function useTutorSession({
         toast.error("Failed to persist final tutor study-time slice");
       }
     }
-    const result = await api.tutor.endSession(sessionId);
+    const result = await api.tutor.endSession(sessionId, {
+      advance_workflow: options?.advanceWorkflow ?? true,
+    });
     if (sessionId === activeSessionId) {
       clearTutorActiveSessionId();
       clearActiveSessionState();
@@ -556,39 +543,60 @@ export function useTutorSession({
         return null;
       }
       if (!preflightPayload) {
-        toast.error("Select a course, objective scope, and materials before starting the Tutor.");
+        toast.error("Select a course, objective scope, and materials before starting Tutor teach.");
+        return null;
+      }
+      const teachLabel = String(preflightPayload.topic || hub.effectiveTopic || "").trim();
+      if (teachLabel.length < 2) {
+        toast.error("Enter a teach leg topic label before Start Tutor.");
+        return null;
+      }
+      const materialIds = preflightPayload.content_filter?.material_ids || [];
+      if (materialIds.length === 0) {
+        toast.error("Select at least one study material before Start Tutor.");
+        return null;
+      }
+      if (tutorCustomBlockIds.length > 1) {
+        toast.error("Custom teach allows exactly one method block.");
         return null;
       }
       let resolvedChainId = tutorChainId;
-      if (!resolvedChainId && tutorCustomBlockIds.length > 0) {
+      if (!resolvedChainId && tutorCustomBlockIds.length === 1) {
         const customChain = await api.tutor.createCustomChain(
           tutorCustomBlockIds,
-          `Custom ${hub.effectiveTopic || "Chain"}`,
+          `Custom ${teachLabel}`,
         );
         resolvedChainId = customChain.id;
         setTutorChainId(customChain.id);
       }
-      const preflightResult = await api.tutor.preflightSession(preflightPayload);
-      if (preflightResult.blockers.length > 0) {
-        toast.error(preflightResult.blockers[0].message);
+      if (!resolvedChainId) {
+        toast.error("Choose a template chain or one custom method before Start Tutor.");
         return null;
       }
+      const contentFilter = {
+        ...preflightPayload.content_filter,
+        ...(opts?.session_rules && opts.session_rules.length > 0
+          ? { session_rules: opts.session_rules }
+          : {}),
+      };
 
       const session = await api.tutor.createSession({
-        preflight_id: preflightResult.preflight_id,
+        course_id: preflightPayload.course_id,
+        topic: teachLabel,
+        teach_leg_label: teachLabel,
+        session_kind: "tutor",
+        ...(activeWorkflowId ? { workflow_id: activeWorkflowId } : {}),
+        module_name: preflightPayload.module_name,
+        objective_scope: preflightPayload.objective_scope,
+        focus_objective_id: preflightPayload.focus_objective_id,
+        learning_objectives: preflightPayload.learning_objectives,
         phase: "first_pass",
         mode: "Core",
         method_chain_id: resolvedChainId,
+        content_filter: contentFilter,
         ...(opts?.packet_context ? { packet_context: opts.packet_context } : {}),
         ...(opts?.memory_capsule_context
           ? { memory_capsule_context: opts.memory_capsule_context }
-          : {}),
-        ...(opts?.session_rules && opts.session_rules.length > 0
-          ? {
-              content_filter: {
-                session_rules: opts.session_rules,
-              },
-            }
           : {}),
       });
       const full = await api.tutor.getSession(session.session_id);
@@ -616,17 +624,52 @@ export function useTutorSession({
     setTutorChainId,
     tutorChainId,
     tutorCustomBlockIds,
+    activeWorkflowId,
   ]);
+
+  const startGeneralSession = useCallback(async () => {
+    setIsStarting(true);
+    try {
+      const created = await api.tutor.createSession({
+        mode: "Core",
+        topic: "General Q&A",
+        session_kind: "general",
+      });
+      const full = await api.tutor.getSession(created.session_id);
+      applySessionState(full);
+      setShowSetup(false);
+      toast.success("General Q&A ready");
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      return full;
+    } catch (err) {
+      toast.error(
+        `Failed to start General Q&A: ${err instanceof Error ? err.message : "Unknown"}`,
+      );
+      return null;
+    } finally {
+      setIsStarting(false);
+    }
+  }, [applySessionState, queryClient, setShowSetup]);
 
   // ─── Resume session ───
   const resumeSession = useCallback(
     async (sessionId: string) => {
       try {
-        const session = await api.tutor.getSession(sessionId);
+        let session = await api.tutor.getSession(sessionId);
         if (!isTutorSessionActive(session.status)) {
-          clearActiveSessionState();
-          toast.error("Session is not active. Start a new Tutor run from this surface.");
-          return;
+          // Ended/completed/abandoned sessions can be VIEWED but not
+          // continued (turn submission requires status === 'active'). The
+          // product promises "resume from Previous Sessions", so reactivate
+          // the session on the backend, then reload its restored state.
+          await api.tutor.resumeSession(sessionId);
+          session = await api.tutor.getSession(sessionId);
+          if (!isTutorSessionActive(session.status)) {
+            clearActiveSessionState();
+            toast.error(
+              "Could not reactivate this session. Start a new Tutor run instead.",
+            );
+            return;
+          }
         }
         applySessionState(session);
         toast.success("Session resumed");
@@ -995,6 +1038,7 @@ export function useTutorSession({
     endSession,
     shipToBrainAndEnd,
     startSession,
+    startGeneralSession,
     resumeSession,
     handleArtifactCreated,
     handleStudioCapture,

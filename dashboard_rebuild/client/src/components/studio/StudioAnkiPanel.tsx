@@ -186,7 +186,7 @@ export function StudioAnkiPanel({
     <div className="flex h-full min-h-0 flex-col gap-3 p-3" data-testid="studio-anki-content">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]">
+          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
             Anki Export Queue
           </div>
           <p className="font-mono text-[11px] leading-5 text-[#ffc8d3]/68">
@@ -217,7 +217,7 @@ export function StudioAnkiPanel({
                   ),
                 );
             }}
-            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffd6de]"
+            className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
           >
             <ExternalLink className="mr-2 h-3.5 w-3.5" />
             Open Anki
@@ -227,7 +227,7 @@ export function StudioAnkiPanel({
             variant="outline"
             onClick={handleExportCsv}
             disabled={completeCards.length === 0}
-            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffd6de]"
+            className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
           >
             <Download className="mr-2 h-3.5 w-3.5" />
             Export CSV
@@ -235,14 +235,14 @@ export function StudioAnkiPanel({
         </div>
       </div>
 
-      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
         {completeCards.length} ready / {editableCards.length} total
       </div>
 
       {isLoading ? (
         <div className="font-mono text-xs text-[#ffc8d3]/68">Loading flashcards...</div>
       ) : editableCards.length === 0 ? (
-        <div className="rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-4 font-mono text-xs leading-6 text-[#ffc8d3]/68">
+        <div className="rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/20 p-4 font-mono text-xs leading-6 text-[#ffc8d3]/68">
           No Anki cards yet for this session. Generate cards from the Polish panel,
           then reopen Anki to review and export them.
         </div>
@@ -251,15 +251,15 @@ export function StudioAnkiPanel({
           {editableCards.map((card, index) => (
             <section
               key={card.id}
-              className="rounded-[0.95rem] border border-[rgba(255,118,144,0.18)] bg-black/25 p-3"
+              className="rounded-[var(--ds-r-095)] border border-[var(--ds-accent-a18)] bg-black/25 p-3"
               data-testid="studio-anki-card"
             >
               <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+                <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
                   Card {index + 1}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-[rgba(255,118,144,0.22)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]">
+                  <span className="rounded-full border border-[var(--ds-accent-a22)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
                     {card.source === "draft" ? "Saved draft" : "Card queue"}
                   </span>
                   <Button
@@ -276,7 +276,7 @@ export function StudioAnkiPanel({
                           ),
                         );
                     }}
-                    className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]"
+                    className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
                   >
                     <Copy className="mr-2 h-3.5 w-3.5" />
                     Copy
@@ -286,7 +286,7 @@ export function StudioAnkiPanel({
 
               <div className="grid gap-3 xl:grid-cols-2">
                 <label className="flex flex-col gap-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
                     Front
                   </span>
                   <textarea
@@ -294,12 +294,12 @@ export function StudioAnkiPanel({
                     onChange={(event) =>
                       updateCardField(card.id, "front", event.target.value)
                     }
-                    className="min-h-[112px] rounded-[0.8rem] border border-[rgba(255,118,144,0.18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
+                    className="min-h-[112px] rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
                   />
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
                     Back
                   </span>
                   <textarea
@@ -307,7 +307,7 @@ export function StudioAnkiPanel({
                     onChange={(event) =>
                       updateCardField(card.id, "back", event.target.value)
                     }
-                    className="min-h-[112px] rounded-[0.8rem] border border-[rgba(255,118,144,0.18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
+                    className="min-h-[112px] rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
                   />
                 </label>
               </div>

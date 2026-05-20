@@ -96,7 +96,7 @@ export function RunConfigPanel({
 
   return (
     <div className="space-y-4 font-mono text-sm text-foreground/78">
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           Priming
         </div>
@@ -133,7 +133,7 @@ export function RunConfigPanel({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           Tutor start mode
         </div>
@@ -165,7 +165,7 @@ export function RunConfigPanel({
                   setTutorCustomBlockIds?.([]);
                 }
               }}
-              className="mt-1 h-9 w-full rounded-[0.7rem] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
+              className="mt-1 h-9 w-full rounded-[var(--ds-r-070)] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
             >
               <option value="">
                 {templateChainsLoading ? "Loading chains..." : "No template chain"}
@@ -196,13 +196,13 @@ export function RunConfigPanel({
                 }
               }}
               placeholder="11, 12"
-              className="mt-1 h-9 w-full rounded-[0.7rem] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
+              className="mt-1 h-9 w-full rounded-[var(--ds-r-070)] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
             />
           </label>
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           Runtime rules
         </div>
@@ -217,7 +217,7 @@ export function RunConfigPanel({
               onChange={(event) =>
                 setAccuracyProfile?.(event.target.value as TutorAccuracyProfile)
               }
-              className="mt-1 h-9 w-full rounded-[0.7rem] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
+              className="mt-1 h-9 w-full rounded-[var(--ds-r-070)] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
             >
               <option value="strict">Strict</option>
               <option value="balanced">Balanced</option>
@@ -235,7 +235,7 @@ export function RunConfigPanel({
               onChange={(event) =>
                 setObjectiveScope?.(event.target.value as TutorObjectiveScope)
               }
-              className="mt-1 h-9 w-full rounded-[0.7rem] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
+              className="mt-1 h-9 w-full rounded-[var(--ds-r-070)] border border-primary/18 bg-black/20 px-3 font-mono text-xs text-foreground"
             >
               <option value="module_all">Module all</option>
               <option value="single_focus">Single focus</option>
@@ -244,7 +244,7 @@ export function RunConfigPanel({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/10 bg-black/10 p-3 text-foreground/72">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/10 bg-black/10 p-3 text-foreground/72">
         {hasActiveSession
           ? "Tutor session is already live. Changes stage the next start configuration."
           : "Tutor session not started yet."}

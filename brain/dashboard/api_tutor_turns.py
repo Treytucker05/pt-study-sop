@@ -867,6 +867,8 @@ def send_turn(session_id: str):
         _question_within_reference_targets,
     )
 
+    from dashboard.api_tutor_utils import _normalize_turn_mode
+
     data = request.get_json(silent=True) or {}
     question = data.get("message", "").strip()
     behavior_override = data.get("behavior_override")
@@ -884,7 +886,23 @@ def send_turn(session_id: str):
         conn.close()
         return jsonify({"error": "Session is not active"}), 400
 
-    # Load previous turns for chat history
+    interaction_mode = _normalize_turn_mode(data.get("turn_mode"), session)
+    if interaction_mode == "tutor" and not session.get("method_chain_id"):
+        conn.close()
+        return (
+            jsonify(
+                {
+                    "error": "Tutor teach turns require a teach session with a method chain.",
+                    "code": "TUTOR_TURN_REQUIRES_TEACH_SESSION",
+                }
+            ),
+            400,
+        )
+
+    # Load previous turns for chat history (summary + recency tail when compacted)
+    from dashboard.api_tutor_memory import build_prompt_turn_history
+
+    prompt_history, working_summary_meta = build_prompt_turn_history(conn, session_id)
     turns = _get_session_turns(conn, session_id, limit=20)
 
     # Build chain/block context if method chain is active
@@ -1587,16 +1605,33 @@ def send_turn(session_id: str):
                 pass  # Best-effort
 
             # Build user prompt: chat history + question
-            recent_turns = turns[-12:] if len(turns) > 12 else turns
             history_lines: list[str] = []
-            for t in recent_turns:
-                if t.get("question"):
-                    history_lines.append(f"User: {t['question']}")
-                if t.get("answer"):
-                    ans = t["answer"]
-                    if len(ans) > 800:
-                        ans = ans[:800] + "..."
-                    history_lines.append(f"Assistant: {ans}")
+            if working_summary_meta:
+                history_lines.append(
+                    "System: Working summary for this teach leg:\n"
+                    f"{working_summary_meta.get('summary_text') or ''}"
+                )
+            for message in prompt_history:
+                role = str(message.get("role") or "").strip().lower()
+                content = str(message.get("content") or "").strip()
+                if not content or role == "system":
+                    continue
+                if role == "user":
+                    history_lines.append(f"User: {content}")
+                elif role == "assistant":
+                    if len(content) > 800:
+                        content = content[:800] + "..."
+                    history_lines.append(f"Assistant: {content}")
+            if not history_lines:
+                recent_turns = turns[-12:] if len(turns) > 12 else turns
+                for t in recent_turns:
+                    if t.get("question"):
+                        history_lines.append(f"User: {t['question']}")
+                    if t.get("answer"):
+                        ans = t["answer"]
+                        if len(ans) > 800:
+                            ans = ans[:800] + "..."
+                        history_lines.append(f"Assistant: {ans}")
             history_text = "\n".join(history_lines).strip() or "(no prior turns)"
 
             directive = get_directive(behavior_override)
@@ -2280,8 +2315,8 @@ def send_turn(session_id: str):
                    (session_id, tutor_session_id, course_id, turn_number,
                     question, answer, citations_json, response_id, model_id,
                     phase, artifacts_json, behavior_override, evaluation_json,
-                    strategy_snapshot_json, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    strategy_snapshot_json, interaction_mode, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     session_id,
@@ -2297,6 +2332,7 @@ def send_turn(session_id: str):
                     behavior_override,
                     json.dumps(parsed_verdict) if parsed_verdict else None,
                     json.dumps(scholar_strategy) if scholar_strategy else None,
+                    interaction_mode,
                     now,
                 ),
             )

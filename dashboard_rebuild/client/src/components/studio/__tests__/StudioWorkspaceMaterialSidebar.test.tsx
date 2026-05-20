@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { StudioWorkspaceMaterialSidebar } from "@/components/studio/StudioWorkspaceMaterialSidebar";
 import type { SessionMaterialBundle } from "@/lib/sessionMaterialBundle";
+import type { StudioWorkspaceObject } from "@/lib/studioWorkspaceObjects";
 
 function buildBundle(
   overrides: Partial<SessionMaterialBundle> = {},
@@ -130,5 +131,34 @@ describe("StudioWorkspaceMaterialSidebar", () => {
     expect(
       screen.getByTestId("studio-workspace-material-item-concept-0"),
     ).toBeInTheDocument();
+  });
+
+  it("buckets priming Workspace cards by their artifact type", () => {
+    const workspaceObjects: StudioWorkspaceObject[] = [
+      {
+        id: "priming-result-objectives",
+        kind: "text_note",
+        title: "Learning Objectives · Cardiac Output Lecture",
+        detail: "## Learning Objectives\n- LO-1 — Explain cardiac output regulation",
+        badge: "OBJECTIVES",
+        provenance: {
+          sourceType: "priming_result",
+          resultKey: "learning-objectives",
+          sourceLabel: "Learning Objectives Primer",
+        },
+      },
+    ];
+
+    render(
+      <StudioWorkspaceMaterialSidebar
+        bundle={buildBundle()}
+        workspaceObjects={workspaceObjects}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /learning objectives\s*1/i })).toBeInTheDocument();
+    expect(
+      screen.getByTestId("studio-workspace-material-item-workspace-priming-result-objectives"),
+    ).toHaveTextContent("Learning Objectives · Cardiac Output Lecture");
   });
 });

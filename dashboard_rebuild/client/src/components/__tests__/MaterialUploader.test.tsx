@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MaterialUploader } from "@/components/MaterialUploader";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 // Mock api
 vi.mock("@/lib/api", () => ({
@@ -219,5 +220,26 @@ describe("MaterialUploader", () => {
     fireEvent.change(input);
 
     expect(screen.queryByText(/UPLOAD/)).not.toBeInTheDocument();
+  });
+
+  it("uploads Course Setup files with setup role metadata and no study embedding request", async () => {
+    render(
+      <MaterialUploader courseId={6262} role="setup" setupKind="syllabus_schedule" />,
+      { wrapper: createWrapper() },
+    );
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const docx = new File(["doc data"], "dx-syllabus-schedule.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    Object.defineProperty(input, "files", { value: [docx] });
+    fireEvent.change(input);
+    fireEvent.click(screen.getByText("UPLOAD 1 FILE"));
+
+    expect(api.tutor.uploadMaterial).toHaveBeenCalledWith(docx, {
+      course_id: 6262,
+      library_role: "setup",
+      setup_kind: "syllabus_schedule",
+    });
   });
 });

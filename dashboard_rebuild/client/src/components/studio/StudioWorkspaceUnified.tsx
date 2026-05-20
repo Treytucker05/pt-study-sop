@@ -65,7 +65,10 @@ export function StudioWorkspaceUnified({
     "mind-map": false,
     "concept-map": false,
   });
-  const [materialSidebarOpen, setMaterialSidebarOpen] = useState(true);
+  // Closed by default — the material / Prime-Packet sidebar previously stayed
+  // pinned over the canvas with no easy way to dismiss it. The always-visible
+  // toggle (studio-workspace-material-toggle) summons it on demand.
+  const [materialSidebarOpen, setMaterialSidebarOpen] = useState(false);
   const [conceptMapCommand, setConceptMapCommand] = useState<GraphCanvasCommand | null>(null);
   const [mindMapCommand, setMindMapCommand] = useState<GraphCanvasCommand | null>(null);
   const lastConceptMapRequestKeyRef = useRef<number | null>(null);
@@ -192,6 +195,7 @@ export function StudioWorkspaceUnified({
       {materialSidebarOpen ? (
         <StudioWorkspaceMaterialSidebar
           bundle={sessionMaterialBundle}
+          workspaceObjects={canvasProps.canvasObjects}
           activeTabId={activeTab}
           onAddToCanvas={handleAddItemToCanvas}
         />
@@ -213,7 +217,7 @@ export function StudioWorkspaceUnified({
                 ? "Hide material sidebar"
                 : "Show material sidebar"
             }
-            className="inline-flex h-7 w-7 items-center justify-center rounded-[0.55rem] border border-primary/15 bg-black/30 text-foreground/68 transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-white"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--ds-radius-sm)] border border-primary/15 bg-black/30 text-foreground/68 transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-white"
           >
             {materialSidebarOpen ? (
               <PanelLeftClose className="h-3.5 w-3.5" />
@@ -243,7 +247,7 @@ export function StudioWorkspaceUnified({
                 aria-selected={isActive}
                 onClick={() => handleSelectTab(tab.id)}
                 className={cn(
-                  "rounded-[0.65rem] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors",
+                  "rounded-[var(--ds-r-065)] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors",
                   isActive
                     ? "border-primary/30 bg-black/20 text-white"
                     : "border-transparent text-foreground/70 hover:border-primary/15 hover:bg-black/15 hover:text-white",
@@ -319,7 +323,7 @@ export function StudioWorkspaceUnified({
                     ? "Re-seed the concept map from the active session"
                     : "No session material yet"
                 }
-                className="rounded-[0.65rem] border border-primary/25 bg-black/35 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/78 transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-[var(--ds-r-065)] border border-primary/25 bg-black/35 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/78 transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Refresh from session
               </button>

@@ -273,6 +273,11 @@ import dashboard.api_tutor_projects  # noqa: E402,F401 — registers routes on t
 import dashboard.api_tutor_workflows  # noqa: E402,F401 — registers routes on tutor_bp
 
 # ---------------------------------------------------------------------------
+# Tutor memory / teach legs / working summary  (api_tutor_memory.py)
+# ---------------------------------------------------------------------------
+import dashboard.api_tutor_memory  # noqa: E402,F401 — registers routes on tutor_bp
+
+# ---------------------------------------------------------------------------
 # Tutor Studio routes  (extracted to api_tutor_studio.py)
 # ---------------------------------------------------------------------------
 import dashboard.api_tutor_studio  # noqa: E402,F401 — registers routes on tutor_bp

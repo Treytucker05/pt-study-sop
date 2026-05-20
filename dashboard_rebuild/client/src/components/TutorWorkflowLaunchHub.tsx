@@ -135,17 +135,17 @@ function actionLabelForWorkflow(workflow: TutorWorkflowSummary) {
 function stageBadgeColor(stage: string): string {
   switch (stage) {
     case "priming":
-      return "border-primary/55 bg-[linear-gradient(135deg,rgba(255,76,112,0.22),rgba(24,6,12,0.92))] text-[#ffe3e8]";
+      return "border-primary/55 bg-[linear-gradient(135deg,rgba(255,84,116,0.22),rgba(22,4,10,0.92))] text-[#ffe3ea]";
     case "tutor":
       return "border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(34,38,46,0.92))] text-white";
     case "polish":
-      return "border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(30,22,30,0.92))] text-[#f7dce2]";
+      return "border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(30,22,30,0.92))] text-[#ffe3ea]";
     case "final_sync":
-      return "border-white/30 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(18,21,28,0.92))] text-[#f5f7fb]";
+      return "border-white/30 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(18,21,28,0.92))] text-[#fafbff]";
     case "stored":
-      return "border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(16,18,24,0.92))] text-[#d9dde6]";
+      return "border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(18,21,28,0.92))] text-[#d9dde6]";
     default:
-      return "border-primary/40 bg-[linear-gradient(135deg,rgba(255,70,104,0.14),rgba(20,5,10,0.94))] text-[#ffd3db]";
+      return "border-primary/40 bg-[linear-gradient(135deg,rgba(255,68,104,0.14),rgba(22,4,10,0.94))] text-[#ffd9e1]";
   }
 }
 

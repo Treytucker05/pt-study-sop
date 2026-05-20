@@ -18,6 +18,7 @@ interface TutorLiveStudyPaneProps {
   workflow: UseTutorWorkflowReturn;
   restoredTurns: { question: string; answer: string | null }[] | undefined;
   onStartSession: () => void | Promise<void>;
+  onStartGeneralSession?: () => void | Promise<void>;
   activeMemoryCapsuleContext?: string | null;
   sessionRules?: string[];
   headerContent?: ReactNode;
@@ -44,6 +45,7 @@ export function TutorLiveStudyPane({
   workflow,
   restoredTurns,
   onStartSession,
+  onStartGeneralSession,
   activeMemoryCapsuleContext,
   sessionRules,
   headerContent,
@@ -90,7 +92,17 @@ export function TutorLiveStudyPane({
         description="Tutor starts and resumes directly inside this panel. Prime Packet context, repair notes, and memory capsules feed the session here without redirecting you into another shell."
         actions={[
           {
-            label: "START SESSION",
+            label: "GENERAL Q&A",
+            testId: "tutor-start-general-qa",
+            icon: MessageSquare,
+            onClick: () => {
+              void onStartGeneralSession?.();
+            },
+            variant: "ghost",
+          },
+          {
+            label: "START TUTOR",
+            testId: "tutor-start-teach",
             icon: MessageSquare,
             onClick: () => {
               void onStartSession();
@@ -101,6 +113,7 @@ export function TutorLiveStudyPane({
             ? [
                 {
                   label: "RESUME SESSION",
+                  testId: "tutor-resume-session",
                   icon: MessageSquare,
                   onClick: () => {
                     void session.resumeSession(resumeCandidate!.session_id!);

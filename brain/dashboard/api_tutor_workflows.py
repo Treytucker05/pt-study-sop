@@ -27,6 +27,7 @@ VALID_WORKFLOW_STATUSES = {
     "tutor_complete",
     "polish_in_progress",
     "polish_complete",
+    "study_run_finished",
     "stored",
     "abandoned",
     "error",
@@ -946,7 +947,7 @@ def _fetch_material_rows(conn: sqlite3.Connection, material_ids: list[int]) -> l
         f"""
         SELECT id, title, source_path, folder_path, course_id, file_type, content
         FROM rag_docs
-        WHERE id IN ({placeholders}) AND COALESCE(corpus, 'materials') = 'materials'
+        WHERE id IN ({placeholders}) AND COALESCE(corpus, 'materials') IN ('materials', 'course_setup')
         ORDER BY title COLLATE NOCASE, id
         """,
         tuple(material_ids),
@@ -1518,6 +1519,29 @@ def delete_tutor_workflow(workflow_id: str):
             "related_records_deleted": deleted_related,
         }
     )
+
+
+@tutor_bp.route("/workflows/<workflow_id>/finish", methods=["POST"])
+def finish_study_run(workflow_id: str):
+    """Close the study run (workflow). Does not replace End teach on the active leg."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        workflow_row = _get_workflow_row(conn, workflow_id)
+        if workflow_row is None:
+            return jsonify({"error": "Workflow not found"}), 404
+        _update_workflow_state(
+            conn,
+            workflow_id,
+            current_stage="final_sync",
+            status="study_run_finished",
+            active_tutor_session_id=None,
+        )
+        conn.commit()
+        workflow_row = _get_workflow_row(conn, workflow_id)
+    finally:
+        conn.close()
+    return jsonify({"workflow": _serialize_workflow(workflow_row)})
 
 
 @tutor_bp.route("/workflows/<workflow_id>/stage", methods=["PATCH"])

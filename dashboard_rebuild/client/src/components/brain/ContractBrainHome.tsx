@@ -169,7 +169,7 @@ function SectionCard(props: {
     <Card data-testid={testId} className={cn(CONTROL_DECK_SECTION, className)}>
       <CardHeader className="border-b border-primary/15 px-4 pb-3 pt-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] border border-primary/20 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--ds-r-095)] border border-primary/20 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
             <Icon className="h-4 w-4 text-primary" />
           </div>
           <div className="space-y-1">
@@ -414,7 +414,7 @@ export function ContractBrainHome({
               "grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4",
             )}
           >
-            <div className="rounded-[1rem] border border-primary/15 bg-black/30 p-3">
+            <div className="rounded-[var(--ds-r-100)] border border-primary/15 bg-black/30 p-3">
               <div className={CONTROL_KICKER}>Sessions Logged</div>
               <div className="mt-2 font-mono text-lg leading-8 text-foreground">
                 {sortedSessions.length}
@@ -425,7 +425,7 @@ export function ContractBrainHome({
                   : "No sessions recorded yet"}
               </div>
             </div>
-            <div className="rounded-[1rem] border border-primary/15 bg-black/30 p-3">
+            <div className="rounded-[var(--ds-r-100)] border border-primary/15 bg-black/30 p-3">
               <div className={CONTROL_KICKER}>Minutes Captured</div>
               <div className="mt-2 font-mono text-lg leading-8 text-foreground">
                 {metrics?.totalMinutes || 0}
@@ -434,7 +434,7 @@ export function ContractBrainHome({
                 Derived from WRAP duration/minute fields
               </div>
             </div>
-            <div className="rounded-[1rem] border border-primary/15 bg-black/30 p-3">
+            <div className="rounded-[var(--ds-r-100)] border border-primary/15 bg-black/30 p-3">
               <div className={CONTROL_KICKER}>Cards Drafted</div>
               <div className="mt-2 font-mono text-lg leading-8 text-foreground">
                 {metrics?.totalCards || 0}
@@ -443,7 +443,7 @@ export function ContractBrainHome({
                 Captured at session closeout only
               </div>
             </div>
-            <div className="rounded-[1rem] border border-primary/15 bg-black/30 p-3">
+            <div className="rounded-[var(--ds-r-100)] border border-primary/15 bg-black/30 p-3">
               <div className={CONTROL_KICKER}>Issue Patterns</div>
               <div className="mt-2 font-mono text-lg leading-8 text-foreground">
                 {totalIssuePatterns}

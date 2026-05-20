@@ -29,6 +29,7 @@ import {
   buildStudioWorkspaceObjects,
   normalizeStudioWorkspaceObjects,
   type StudioWorkspaceObject,
+  type StudioWorkspaceObjectUpdate,
 } from "@/lib/studioWorkspaceObjects";
 import {
   readTutorWorkspaceDraftObjects,
@@ -68,6 +69,22 @@ function isPrimePromotedWorkspaceObject(
   workspaceObject: StudioWorkspaceObject,
 ): workspaceObject is PrimePromotedWorkspaceObject {
   return workspaceObject.kind === "excerpt" || workspaceObject.kind === "text_note";
+}
+
+function applyWorkspaceObjectUpdate<T extends StudioWorkspaceObject>(
+  workspaceObject: T,
+  patch: StudioWorkspaceObjectUpdate,
+): T {
+  return {
+    ...workspaceObject,
+    ...patch,
+    workspace: patch.workspace
+      ? {
+          ...workspaceObject.workspace,
+          ...patch.workspace,
+        }
+      : workspaceObject.workspace,
+  } as T;
 }
 
 function readCapsuleRecordLabel(record: Record<string, unknown> | null | undefined): string | null {
@@ -145,7 +162,24 @@ function formatEntryMaterialLabel(
   }
 
   const basename = resolvedLabel.split(/[\\/]/).pop()?.trim() || resolvedLabel;
-  return basename || "Unknown material";
+  if (!basename) return "Unknown material";
+
+  // Chapter-split docs carry a logical "<file>.<ext>#chNN" source path.
+  // Render them readably + distinctly: "Physical Therapy for Children — Ch 2"
+  // (otherwise every chapter shows the same truncated "…Children.pdf#ch…").
+  const chapterAt = basename.search(/#ch\d+$/i);
+  if (chapterAt > 0) {
+    const num = basename
+      .slice(chapterAt)
+      .replace(/#ch/i, "")
+      .replace(/^0+(?=\d)/, "");
+    const stem = basename
+      .slice(0, chapterAt)
+      .replace(/\.[A-Za-z0-9]{1,6}$/, "")
+      .trim();
+    return `${stem || basename} — Ch ${num}`;
+  }
+  return basename;
 }
 
 const ENTRY_CARD_UPLOAD_ACCEPT = ".pdf,.docx,.mp4,.pptx";
@@ -276,7 +310,7 @@ function EntryResumePanel({
     return (
       <div
         data-testid="tutor-entry-resume-panel"
-        className="rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-4 font-mono text-sm leading-6 text-[#ffd9e1]/72"
+        className="rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/20 p-4 font-mono text-sm leading-6 text-[#ffd9e1]/72"
       >
         Loading past sessions...
       </div>
@@ -287,7 +321,7 @@ function EntryResumePanel({
     return (
       <div
         data-testid="tutor-entry-resume-panel"
-        className="space-y-3 rounded-[0.9rem] border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.12)] p-4 font-mono text-sm leading-6 text-[#ffe3e9]"
+        className="space-y-3 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a22)] bg-[rgba(255,68,104,0.12)] p-4 font-mono text-sm leading-6 text-[#ffe3ea]"
       >
         <div>Could not load past sessions.</div>
         <button
@@ -310,7 +344,7 @@ function EntryResumePanel({
     return (
       <div
         data-testid="tutor-entry-resume-panel"
-        className="space-y-3 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-4 font-mono text-sm leading-6 text-[#ffd9e1]/78"
+        className="space-y-3 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/20 p-4 font-mono text-sm leading-6 text-[#ffd9e1]/78"
       >
         <div data-testid="tutor-entry-resume-empty">
           No past sessions yet — start a fresh one.
@@ -318,7 +352,7 @@ function EntryResumePanel({
         <button
           type="button"
           onClick={onSwitchToNew}
-          className="rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
+          className="rounded-full border border-[var(--ds-accent-a22)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
         >
           Start New Session
         </button>
@@ -329,7 +363,7 @@ function EntryResumePanel({
   return (
     <div
       data-testid="tutor-entry-resume-panel"
-      className="max-h-[320px] space-y-2 overflow-y-auto rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/20 p-2"
+      className="max-h-[320px] space-y-2 overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/20 p-2"
     >
       {rows.map((row) => {
         const label = row.session_name || row.topic || "Untitled session";
@@ -341,7 +375,7 @@ function EntryResumePanel({
           <div
             key={row.session_id}
             data-testid="tutor-entry-resume-row"
-            className="flex items-start justify-between gap-3 rounded-[0.8rem] border border-transparent bg-black/25 px-3 py-2 transition hover:border-[rgba(255,118,144,0.2)]"
+            className="flex items-start justify-between gap-3 rounded-[var(--ds-r-080)] border border-transparent bg-black/25 px-3 py-2 transition hover:border-[rgba(255,118,144,0.2)]"
           >
             <div className="min-w-0 space-y-1">
               <div className="truncate font-mono text-sm text-white">{label}</div>
@@ -351,7 +385,7 @@ function EntryResumePanel({
                 </div>
               ) : null}
               {stamp ? (
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
                   Last active {stamp}
                 </div>
               ) : null}
@@ -359,7 +393,7 @@ function EntryResumePanel({
             <button
               type="button"
               onClick={() => onResume(row)}
-              className="shrink-0 rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
+              className="shrink-0 rounded-full border border-[var(--ds-accent-a22)] bg-black/30 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white hover:bg-black/40"
             >
               Resume
             </button>
@@ -493,9 +527,31 @@ export function TutorShell({
 
     return Array.from(merged.values());
   }, [controlledPromotedPrimePacketObjects, localPromotedPrimePacketObjects]);
+  const tutorContextWorkspaceObjects = useMemo(
+    () =>
+      workspaceDraftObjects.filter(
+        (workspaceObject): workspaceObject is PrimePromotedWorkspaceObject =>
+          isPrimePromotedWorkspaceObject(workspaceObject) &&
+          workspaceObject.workspace?.tutorContext === true,
+      ),
+    [workspaceDraftObjects],
+  );
+  const tutorContextPacketObjects = useMemo(() => {
+    const merged = new Map<string, PrimePromotedWorkspaceObject>();
+
+    for (const workspaceObject of promotedPrimePacketObjects) {
+      merged.set(workspaceObject.id, workspaceObject);
+    }
+
+    for (const workspaceObject of tutorContextWorkspaceObjects) {
+      merged.set(workspaceObject.id, workspaceObject);
+    }
+
+    return Array.from(merged.values());
+  }, [promotedPrimePacketObjects, tutorContextWorkspaceObjects]);
   const promotedPrimeObjectIds = useMemo(
-    () => promotedPrimePacketObjects.map((workspaceObject) => workspaceObject.id),
-    [promotedPrimePacketObjects],
+    () => tutorContextPacketObjects.map((workspaceObject) => workspaceObject.id),
+    [tutorContextPacketObjects],
   );
   const documentTabs = controlledDocumentTabs ?? localDocumentTabs;
   const activeDocumentTabId =
@@ -543,23 +599,23 @@ export function TutorShell({
   );
   const promotedPrimeExcerptObjects = useMemo(
     () =>
-      promotedPrimePacketObjects.filter(
+      tutorContextPacketObjects.filter(
         (
           workspaceObject,
         ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "excerpt" }> =>
           workspaceObject.kind === "excerpt",
       ),
-    [promotedPrimePacketObjects],
+    [tutorContextPacketObjects],
   );
   const promotedPrimeArtifactObjects = useMemo(
     () =>
-      promotedPrimePacketObjects.filter(
+      tutorContextPacketObjects.filter(
         (
           workspaceObject,
         ): workspaceObject is Extract<StudioWorkspaceObject, { kind: "text_note" }> =>
           workspaceObject.kind === "text_note",
       ),
-    [promotedPrimePacketObjects],
+    [tutorContextPacketObjects],
   );
   const primePacketSections = useMemo(
     () =>
@@ -672,6 +728,34 @@ export function TutorShell({
     },
     [],
   );
+  const handleUpdateWorkspaceObject = useCallback(
+    (objectId: string, patch: StudioWorkspaceObjectUpdate) => {
+      setWorkspaceDraftObjects((prev) =>
+        prev.map((workspaceObject) =>
+          workspaceObject.id === objectId
+            ? applyWorkspaceObjectUpdate(workspaceObject, patch)
+            : workspaceObject,
+        ),
+      );
+      setLocalPromotedPrimePacketObjects((prev) =>
+        prev.map((workspaceObject) =>
+          workspaceObject.id === objectId
+            ? applyWorkspaceObjectUpdate(workspaceObject, patch)
+            : workspaceObject,
+        ),
+      );
+    },
+    [],
+  );
+  const handleDeleteWorkspaceObject = useCallback((objectId: string) => {
+    setWorkspaceDraftObjects((prev) =>
+      prev.filter((workspaceObject) => workspaceObject.id !== objectId),
+    );
+    setCanvasObjectIds((prev) => prev.filter((existingId) => existingId !== objectId));
+    setLocalPromotedPrimePacketObjects((prev) =>
+      prev.filter((workspaceObject) => workspaceObject.id !== objectId),
+    );
+  }, []);
   const handleOpenSourceInDocumentDock = useCallback(
     (
       workspaceObject: Extract<
@@ -1047,7 +1131,7 @@ export function TutorShell({
     if (tutorCustomBlockIds.length > 0) {
       return "custom";
     }
-    return "auto";
+    return "";
   }, [tutorChainId, tutorCustomBlockIds.length]);
   const applyCanvasPreset = useCallback(
     (preset: "priming" | "study" | "polish" | "full_studio" | "minimal") => {
@@ -1161,6 +1245,7 @@ export function TutorShell({
         : 0,
     [hub],
   );
+  const [entryMaterialFilter, setEntryMaterialFilter] = useState("");
   const selectedCourseMaterials = useMemo(
     () =>
       typeof hub.courseId === "number"
@@ -1168,6 +1253,21 @@ export function TutorShell({
         : [],
     [hub.chatMaterials, hub.courseId],
   );
+  const filteredCourseMaterials = useMemo(() => {
+    const q = entryMaterialFilter.trim().toLowerCase();
+    if (!q) return selectedCourseMaterials;
+    return selectedCourseMaterials.filter((material) => {
+      const label = formatEntryMaterialLabel(
+        material.title,
+        material.source_path,
+      ).toLowerCase();
+      return (
+        label.includes(q) ||
+        (material.source_path || "").toLowerCase().includes(q) ||
+        (material.title || "").toLowerCase().includes(q)
+      );
+    });
+  }, [selectedCourseMaterials, entryMaterialFilter]);
   const selectedCourseMaterialIds = useMemo(
     () => selectedCourseMaterials.map((material) => material.id),
     [selectedCourseMaterials],
@@ -1453,7 +1553,7 @@ export function TutorShell({
     artifacts: session.artifacts,
     turnCount: session.turnCount ?? 0,
     capturedNotes: workflow.activeWorkflowDetail?.captured_notes ?? [],
-    primePacket: promotedPrimePacketObjects,
+    primePacket: tutorContextPacketObjects,
     polishPacket: promotedPolishPacketNotes,
     hasWorkflowDetail: Boolean(workflow.activeWorkflowDetail),
   });
@@ -1473,6 +1573,8 @@ export function TutorShell({
         sessionMaterialBundle={sessionMaterialBundle}
         onPromoteExcerptToPrime={handlePromoteExcerptToPrime}
         onPromoteTextNoteToPrime={handlePromoteTextNoteToPrime}
+        onUpdateWorkspaceObject={handleUpdateWorkspaceObject}
+        onDeleteWorkspaceObject={handleDeleteWorkspaceObject}
       />
     </div>
   );
@@ -1521,9 +1623,9 @@ export function TutorShell({
           sourceInventory={workflow.mergedPrimingSourceInventory}
           vaultFolderPreview={hub.derivedVaultFolder}
           readinessItems={workflow.primingReadinessItems}
-          preflightBlockers={session.preflight?.blockers || []}
-          preflightLoading={session.preflightLoading}
-          preflightError={session.preflightError}
+          preflightBlockers={[]}
+          preflightLoading={false}
+          preflightError={null}
           onBackToStudio={() => undefined}
           onSaveDraft={() => {
             void workflow.saveWorkflowPriming("draft");
@@ -1633,25 +1735,20 @@ export function TutorShell({
             className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
           >
             <div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
                 Tutor Runtime
               </div>
               <p className="mt-1 font-mono text-xs leading-6 text-[#ffd9e1]/70">
                 Tutor chain and template choices stay local to this panel and do not change Priming scope.
               </p>
             </div>
-            <label className="flex min-w-[240px] flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            <label className="flex min-w-[240px] flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
               Tutor Chain Template
               <select
                 aria-label="Tutor chain template"
                 value={tutorChainSelectValue}
                 onChange={(event) => {
                   const value = event.target.value;
-                  if (value === "auto") {
-                    setTutorChainId?.(undefined);
-                    setTutorCustomBlockIds?.([]);
-                    return;
-                  }
                   if (value === "custom") {
                     setTutorChainId?.(undefined);
                     return;
@@ -1663,9 +1760,9 @@ export function TutorShell({
                   }
                 }}
                 disabled={templateChainsLoading}
-                className="h-10 rounded-[0.85rem] border border-[rgba(255,118,144,0.16)] bg-black/35 px-3 font-mono text-sm text-white outline-none"
+                className="h-10 rounded-[var(--ds-r-085)] border border-[var(--ds-accent-a16)] bg-black/35 px-3 font-mono text-sm text-white outline-none"
               >
-                <option value="auto">Auto tutor flow</option>
+                <option value="">Select a chain template</option>
                 {templateChains.map((chain) => (
                   <option key={chain.id} value={`template:${chain.id}`}>
                     {readTemplateChainLabel(chain)}
@@ -1693,6 +1790,10 @@ export function TutorShell({
                 : {}),
             },
           );
+        }}
+        onStartGeneralSession={() => {
+          applyCanvasPreset("study");
+          void session.startGeneralSession();
         }}
         activeMemoryCapsuleContext={activeMemoryCapsuleContext}
         sessionRules={activeTutorSessionRules}
@@ -1735,7 +1836,7 @@ export function TutorShell({
   );
   const notesPanel = (
     <div className="flex h-full flex-col gap-3 p-3">
-      <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]">
+      <div className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
         Scratch Notes
       </div>
       <p className="font-mono text-[11px] leading-5 text-[#ffc8d3]/68">
@@ -1760,7 +1861,7 @@ export function TutorShell({
           });
         }}
         placeholder="Capture quick notes, questions, and prompts here."
-        className="min-h-0 flex-1 resize-none rounded-[0.8rem] border border-[rgba(255,118,144,0.18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
+        className="min-h-0 flex-1 resize-none rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a18)] bg-black/30 p-3 font-mono text-sm leading-6 text-white outline-none placeholder:text-[#ffc8d3]/38"
       />
     </div>
   );
@@ -1809,7 +1910,7 @@ export function TutorShell({
   const entryCard = (
     <div
       data-testid="tutor-entry-card"
-      className={`relative space-y-5 rounded-[1rem] pr-10 transition-shadow duration-300 ${
+      className={`relative space-y-5 rounded-[var(--ds-r-100)] pr-10 transition-shadow duration-300 ${
         entryCardFlashActive ? "ring-2 ring-primary/50" : ""
       }`}
     >
@@ -1835,8 +1936,8 @@ export function TutorShell({
           onClick={() => setEntryMode("new")}
           className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition ${
             entryMode === "new"
-              ? "border-[rgba(255,118,144,0.36)] bg-[rgba(255,78,108,0.18)] text-white"
-              : "border-[rgba(255,118,144,0.18)] bg-black/20 text-[#ffd6de] hover:text-white"
+              ? "border-[rgba(255,118,144,0.36)] bg-[var(--ds-rose78-a18)] text-white"
+              : "border-[var(--ds-accent-a18)] bg-black/20 text-[var(--ds-fg-pink-1)] hover:text-white"
           }`}
         >
           New Session
@@ -1849,8 +1950,8 @@ export function TutorShell({
           onClick={() => setEntryMode("resume")}
           className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition ${
             entryMode === "resume"
-              ? "border-[rgba(255,118,144,0.36)] bg-[rgba(255,78,108,0.18)] text-white"
-              : "border-[rgba(255,118,144,0.18)] bg-black/20 text-[#ffd6de] hover:text-white"
+              ? "border-[rgba(255,118,144,0.36)] bg-[var(--ds-rose78-a18)] text-white"
+              : "border-[var(--ds-accent-a18)] bg-black/20 text-[var(--ds-fg-pink-1)] hover:text-white"
           }`}
         >
           Resume Session
@@ -1874,7 +1975,7 @@ export function TutorShell({
         ) : (
           <>
       <div className="space-y-2">
-        <div className="font-mono text-xs uppercase tracking-[0.18em] text-[#ffb9c7]">
+        <div className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
           Floating Studio
         </div>
         <h2 className="font-arcade text-lg uppercase tracking-[0.16em] text-white">
@@ -1891,13 +1992,13 @@ export function TutorShell({
         {entryCardStatusMessage ? (
           <div
             data-testid="studio-entry-status-message"
-            className="rounded-[0.9rem] border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.12)] px-4 py-3 font-mono text-xs leading-6 text-[#ffe3e9]"
+            className="rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a22)] bg-[rgba(255,68,104,0.12)] px-4 py-3 font-mono text-xs leading-6 text-[#ffe3ea]"
           >
             {entryCardStatusMessage}
           </div>
         ) : null}
       </div>
-      <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+      <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
         Session Name
         <input
           aria-label="Session Name"
@@ -1905,16 +2006,16 @@ export function TutorShell({
           value={entrySessionName}
           onChange={(event) => onEntrySessionNameChange?.(event.target.value)}
           placeholder="e.g. Week 9 Basal Ganglia Review"
-          className="h-11 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 font-mono text-sm text-white outline-none placeholder:text-[#ffc8d3]/38"
+          className="h-11 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/30 px-3 font-mono text-sm text-white outline-none placeholder:text-[#ffc8d3]/38"
         />
       </label>
-      <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+      <label className="flex max-w-md flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
         Course
         <select
           aria-label="Course for new priming session"
           value={typeof hub.courseId === "number" ? String(hub.courseId) : ""}
           onChange={handleEntryCourseChange}
-          className="h-11 rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 px-3 font-mono text-sm text-white outline-none"
+          className="h-11 rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/30 px-3 font-mono text-sm text-white outline-none"
         >
           <option value="">Select course</option>
           {availableCourses.map((course) => (
@@ -1927,21 +2028,29 @@ export function TutorShell({
       {typeof hub.courseId === "number" ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]">
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
               Session Materials
             </div>
             <button
               type="button"
               onClick={handleToggleAllEntryMaterials}
-              className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de] transition hover:text-white"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] transition hover:text-white"
             >
               {allEntryMaterialsSelected ? "Deselect All" : "Select All"}
             </button>
           </div>
-          <div className="max-h-[200px] overflow-y-auto rounded-[0.9rem] border border-[rgba(255,118,144,0.18)] bg-black/30 p-2">
-            {selectedCourseMaterials.length > 0 ? (
+          <input
+            type="text"
+            value={entryMaterialFilter}
+            onChange={(event) => setEntryMaterialFilter(event.target.value)}
+            placeholder={`Filter ${selectedCourseMaterials.length} materials…`}
+            aria-label="Filter session materials"
+            className="w-full rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a18)] bg-black/40 px-3 py-2 font-mono text-sm text-white outline-none placeholder:text-[#ffc8d3]/45 focus:border-[var(--ds-accent-a36)]"
+          />
+          <div className="max-h-[240px] overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/30 p-2">
+            {filteredCourseMaterials.length > 0 ? (
               <div className="space-y-2">
-                {selectedCourseMaterials.map((material) => {
+                {filteredCourseMaterials.map((material) => {
                   const checked = hub.selectedMaterials.includes(material.id);
                   const entryMaterialLabel = formatEntryMaterialLabel(
                     material.title,
@@ -1950,20 +2059,21 @@ export function TutorShell({
                   return (
                     <label
                       key={material.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-[0.8rem] border border-transparent px-2 py-2 transition hover:border-[rgba(255,118,144,0.18)] hover:bg-black/20"
+                      title={entryMaterialLabel}
+                      className="flex cursor-pointer items-start gap-3 rounded-[var(--ds-r-080)] border border-transparent px-2 py-2 transition hover:border-[var(--ds-accent-a18)] hover:bg-black/20"
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleToggleEntryMaterial(material.id)}
-                        className="h-4 w-4 rounded border-[rgba(255,118,144,0.28)] bg-black/40 text-primary"
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[rgba(255,118,144,0.28)] bg-black/40 text-primary"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-mono text-sm text-white">
+                        <div className="break-words font-mono text-sm leading-snug text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
                           {entryMaterialLabel}
                         </div>
                       </div>
-                      <span className="rounded-full border border-[rgba(255,118,144,0.22)] bg-black/30 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffd6de]">
+                      <span className="rounded-full border border-[var(--ds-accent-a22)] bg-black/30 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
                         {formatMaterialFileType(material.file_type)}
                       </span>
                     </label>
@@ -1972,7 +2082,9 @@ export function TutorShell({
               </div>
             ) : (
               <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
-                No materials available for this course yet.
+                {selectedCourseMaterials.length > 0
+                  ? `No materials match “${entryMaterialFilter.trim()}”.`
+                  : "No materials available for this course yet."}
               </div>
             )}
           </div>
@@ -1984,9 +2096,11 @@ export function TutorShell({
               disabled={sourceShelfUploading}
               className="w-full cursor-pointer rounded-lg border border-[rgba(255,118,144,0.25)] border-dashed p-3 text-center font-mono transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-70"
             >
-              <Upload className="mx-auto h-4 w-4 text-[#ffb9c7]" aria-hidden="true" />
+              <Upload className="mx-auto h-4 w-4 text-[var(--ds-fg-pink-2)]" aria-hidden="true" />
               <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white">
-                {sourceShelfUploading ? "Uploading Materials..." : "Upload New Materials"}
+                {sourceShelfUploading
+                  ? "Adding to Current Run..."
+                  : "Upload to Library + Current Run"}
               </div>
               <div className="mt-1 text-[11px] text-[#ffc8d3]/68">
                 PDF, DOCX, MP4, PPTX
@@ -1995,7 +2109,7 @@ export function TutorShell({
             <input
               ref={entryUploadInputRef}
               data-testid="studio-entry-upload-input"
-              aria-label="Upload new materials"
+              aria-label="Upload to Library and Current Run"
               type="file"
               accept={ENTRY_CARD_UPLOAD_ACCEPT}
               multiple
@@ -2005,9 +2119,9 @@ export function TutorShell({
             {sourceShelfUploading ? (
               <div
                 data-testid="studio-entry-upload-status"
-                className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#ffb9c7]"
+                className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]"
               >
-                Uploading selected files to this course...
+                Uploading to Library and Current Run...
               </div>
             ) : null}
           </div>
@@ -2034,7 +2148,7 @@ export function TutorShell({
             void workflow.openStudioPriming();
           }}
           disabled={typeof hub.courseId !== "number" || isStartingPriming}
-          className="rounded-full border border-[rgba(255,118,144,0.22)] bg-[rgba(255,68,104,0.18)] px-4 font-mono text-xs uppercase tracking-[0.18em] text-white hover:bg-[rgba(255,68,104,0.28)]"
+          className="rounded-full border border-[var(--ds-accent-a22)] bg-[var(--ds-rose68-a18)] px-4 font-mono text-xs uppercase tracking-[0.18em] text-white hover:bg-[var(--ds-rose68-a28)]"
         >
           {isStartingPriming ? "Starting..." : "Start Session"}
         </Button>
@@ -2050,7 +2164,7 @@ export function TutorShell({
             setShowSetup(false);
             applyCanvasPreset("study");
           }}
-          className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
+          className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
         >
           Skip Setup
         </Button>
@@ -2062,7 +2176,7 @@ export function TutorShell({
               setShowSetup(false);
               applyCanvasPreset("full_studio");
             }}
-            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
+            className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
           >
             Open Full Studio
           </Button>
@@ -2075,7 +2189,7 @@ export function TutorShell({
               applyCanvasPreset("study");
               void onResumeHubCandidate(resumeCandidate);
             }}
-            className="rounded-full border-[rgba(255,118,144,0.18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[#ffd6de]"
+            className="rounded-full border-[var(--ds-accent-a18)] bg-black/20 px-4 font-mono text-xs uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]"
           >
             Resume
           </Button>

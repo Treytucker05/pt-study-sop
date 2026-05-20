@@ -28,6 +28,8 @@ interface UseSSEStreamOptions {
   webSearchOn: boolean;
   deepThinkOn: boolean;
   geminiVisionOn: boolean;
+  /** Learner interaction mode for this send (General Q&A vs Tutor teach). */
+  turnMode?: "general" | "tutor";
 }
 
 interface UseSSEStreamReturn {
@@ -36,7 +38,7 @@ interface UseSSEStreamReturn {
   input: string;
   setInput: Dispatch<SetStateAction<string>>;
   isStreaming: boolean;
-  sendMessage: () => void;
+  sendMessage: (modeOverride?: "general" | "tutor") => void;
   streamAbortRef: React.MutableRefObject<AbortController | null>;
 }
 
@@ -71,6 +73,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     webSearchOn,
     deepThinkOn,
     geminiVisionOn,
+    turnMode = "tutor",
   } = options;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -127,9 +130,10 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     };
   }, []);
 
-  const sendMessage = useCallback(async () => {
+  const sendMessage = useCallback(async (modeOverride?: "general" | "tutor") => {
     if (!input.trim() || !sessionId || isStreaming) return;
 
+    const effectiveTurnMode = modeOverride ?? turnMode;
     const userMessage = input.trim();
     const referenceTargets = extractReferenceTargetsFromMessage(userMessage);
     const command = parseArtifactCommand(userMessage);
@@ -171,6 +175,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
+          turn_mode: effectiveTurnMode,
           content_filter: {
             material_ids: selectedMaterialIds,
             accuracy_profile: accuracyProfile,
@@ -527,6 +532,7 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
     webSearchOn,
     deepThinkOn,
     geminiVisionOn,
+    turnMode,
     messages,
     createMessageId,
   ]);

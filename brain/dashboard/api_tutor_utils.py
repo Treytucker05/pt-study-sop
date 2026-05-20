@@ -299,7 +299,7 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
         "codex_thread_id",
         "last_response_id",
     }
-    required_tutor_turn_cols = {"response_id", "model_id"}
+    required_tutor_turn_cols = {"response_id", "model_id", "interaction_mode"}
     required_session_cols = {"selector_chain_id", "selector_policy_version"}
     try:
         cur = conn.cursor()
@@ -335,6 +335,7 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
         for col, typedef in (
             ("response_id", "TEXT"),
             ("model_id", "TEXT"),
+            ("interaction_mode", "TEXT"),
         ):
             if col not in tt_cols:
                 cur.execute(f"ALTER TABLE tutor_turns ADD COLUMN {col} {typedef}")
@@ -355,6 +356,59 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _normalize_turn_mode(raw: Any, session: dict) -> str:
+    """Return ``general`` or ``tutor`` for a send_turn payload."""
+    value = str(raw or "").strip().lower()
+    if value in ("general", "tutor"):
+        return value
+    if session.get("method_chain_id"):
+        return "tutor"
+    return "general"
+
+
+def _validate_teach_session_create(
+    conn: sqlite3.Connection,
+    *,
+    method_chain_id: Any,
+    teach_leg_label: str,
+    content_filter: dict[str, Any],
+) -> tuple[bool, str, str]:
+    """Validate teach-mode session create. Returns (ok, code, message)."""
+    from dashboard.api_tutor_turns import _resolve_chain_blocks
+
+    material_ids = content_filter.get("material_ids") or []
+    if not material_ids:
+        return False, "TEACH_MATERIALS_REQUIRED", (
+            "Tutor teach requires at least one study material in scope."
+        )
+    label = str(teach_leg_label or "").strip()
+    if len(label) < 2:
+        return False, "TEACH_LEG_LABEL_REQUIRED", (
+            "Each teach leg requires a short topic label before Start Tutor."
+        )
+    try:
+        chain_id = int(method_chain_id)
+    except (TypeError, ValueError):
+        return False, "TEACH_CHAIN_REQUIRED", "Tutor teach requires a method chain."
+
+    cur = conn.cursor()
+    cur.execute("SELECT is_template FROM method_chains WHERE id = ?", (chain_id,))
+    row = cur.fetchone()
+    if not row:
+        return False, "CHAIN_NOT_FOUND", "Method chain not found."
+    is_template = int(row[0] or 0)
+    blocks = _resolve_chain_blocks(conn, chain_id)
+    if not blocks:
+        return False, "CHAIN_EMPTY", "Method chain has no blocks."
+    if not is_template and len(blocks) != 1:
+        return (
+            False,
+            "TEACH_SINGLE_METHOD_ONLY",
+            "Custom teach must use exactly one method block.",
+        )
+    return True, "", ""
 
 
 def _gen_session_id() -> str:

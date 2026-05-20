@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 import {
@@ -26,6 +27,7 @@ import {
   Sparkles,
   Loader2,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { ICON_SM, INPUT_BASE, SELECT_BASE } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
@@ -83,16 +85,16 @@ const RUNTIME_STATUS_STYLES: Record<TutorTeachRuntimeStatus, string> = {
 };
 
 const RUNTIME_CARD_BASE =
-  "relative overflow-hidden border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,44,78,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
+  "relative overflow-hidden border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.1)_22%,rgba(0,0,0,0.26)_100%),linear-gradient(135deg,rgba(255,42,76,0.08),rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.1)_100%)] p-4 backdrop-blur-sm shadow-[0_14px_28px_rgba(0,0,0,0.14)]";
 
 const TUTOR_STRIP =
-  "relative overflow-hidden border border-[rgba(255,78,108,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.1)_20%,rgba(0,0,0,0.24)_100%),linear-gradient(135deg,rgba(255,42,76,0.07),rgba(0,0,0,0.03)_46%,rgba(0,0,0,0.09)_100%)] px-4 py-3 backdrop-blur-sm shadow-[0_10px_24px_rgba(0,0,0,0.12)]";
+  "relative border-b border-white/[0.06] bg-zinc-950/40 px-3 py-2";
 
 const TUTOR_META_CHIP =
-  "inline-flex min-h-[40px] items-center gap-2 border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_28%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-sm text-foreground/82 backdrop-blur-sm";
+  "inline-flex min-h-0 items-center gap-2 rounded-md bg-white/[0.04] px-2.5 py-1 text-[13px] text-zinc-300";
 
 const TUTOR_SELECT_OPTION_CLASS =
-  "bg-[#12070b] text-[#ffe3ea]";
+  "bg-[#12070b] text-[var(--ds-fg-pink-6)]";
 
 const TUTOR_SELECT_OPTION_STYLE = {
   backgroundColor: "#12070b",
@@ -101,14 +103,14 @@ const TUTOR_SELECT_OPTION_STYLE = {
 
 function runtimeBadgeClasses(status: TutorTeachRuntimeStatus): string {
   return cn(
-    "rounded-[0.2rem] px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+    "rounded-[var(--ds-r-020)] px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]",
     RUNTIME_STATUS_STYLES[status],
   );
 }
 
 function tutorUtilityButton(compact = false): string {
   return cn(
-    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[0.28rem] border border-[rgba(255,78,108,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(255,108,136,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
+    "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[var(--ds-radius-xs)] border border-[var(--ds-rose78-a18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12)_26%,rgba(0,0,0,0.24)_100%)] px-3 py-2 font-mono text-ui-2xs uppercase tracking-[0.16em] text-foreground/78 transition-colors duration-150 ease-out hover:border-[rgba(251,113,133,0.32)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black backdrop-blur-sm",
     compact ? "h-10 w-10 px-0" : null,
   );
 }
@@ -184,18 +186,18 @@ function RuntimeValue({
   return (
     <div className={RUNTIME_CARD_BASE}>
       <div className="flex items-start justify-between gap-2">
-        <div className={CONTROL_KICKER}>{field.label}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+          {field.label}
+        </div>
         <Badge variant="outline" className={runtimeBadgeClasses(field.status)}>
           {field.status}
         </Badge>
       </div>
-      <div className="mt-2 font-mono text-base leading-7 text-foreground">
+      <div className="mt-2 text-base leading-6 text-zinc-200">
         {field.value}
       </div>
       {detail ? (
-        <div className="mt-2 font-mono text-sm leading-6 text-foreground/72">
-          {detail}
-        </div>
+        <div className="mt-2 text-sm leading-6 text-zinc-400">{detail}</div>
       ) : null}
     </div>
   );
@@ -295,21 +297,21 @@ export function TutorTopBar({
         </div>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="space-y-1.5">
         <div
           className={cn(TUTOR_STRIP, "flex flex-wrap items-center gap-2.5")}
         >
-          <span className="font-arcade text-ui-xs uppercase tracking-[0.18em] text-white">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             ACTIVE WORKFLOW
           </span>
-          <span className="h-4 w-px bg-primary/18" aria-hidden="true" />
-          <span className="font-mono text-sm uppercase tracking-[0.16em] text-foreground/78">
+          <span className="h-3 w-px bg-white/10" aria-hidden="true" />
+          <span className="text-[12px] font-medium text-zinc-500">
             {surfaceLabel}
           </span>
           {workflowStageLabel ? (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-zinc-400"
             >
               STAGE {workflowStageLabel}
             </Badge>
@@ -317,7 +319,7 @@ export function TutorTopBar({
           {workflowStatusLabel ? (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-secondary/25 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em]"
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-zinc-400"
             >
               {workflowStatusLabel}
             </Badge>
@@ -325,14 +327,14 @@ export function TutorTopBar({
           {isTutorSessionView ? (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-emerald-500/26 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-emerald-300"
+              className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-400"
             >
               LIVE SESSION
             </Badge>
           ) : (
             <Badge
               variant="outline"
-              className="rounded-[0.2rem] border-primary/20 px-2 py-1 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/76"
+              className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-zinc-400"
             >
               READY
             </Badge>
@@ -347,7 +349,7 @@ export function TutorTopBar({
               }
               aria-expanded={previousSessionsExpanded}
               aria-controls="tutor-previous-sessions"
-              className={cn(tutorUtilityButton(), "px-3")}
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100"
             >
               {previousSessionsExpanded ? (
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -516,7 +518,7 @@ export function TutorTopBar({
                         <Badge
                           variant="outline"
                           className={cn(
-                            "h-5 shrink-0 rounded-[0.2rem] px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+                            "h-5 shrink-0 rounded-[var(--ds-r-020)] px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em]",
                             previousSessionStatusClasses(previousSession.status),
                           )}
                         >
@@ -524,7 +526,7 @@ export function TutorTopBar({
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="h-5 shrink-0 rounded-[0.2rem] border-primary/18 px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/66"
+                          className="h-5 shrink-0 rounded-[var(--ds-r-020)] border-primary/18 px-1.5 font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/66"
                         >
                           {formatPreviousSessionPhaseLabel(previousSession.phase)}
                         </Badge>
@@ -591,7 +593,7 @@ export function TutorTopBar({
       </div>
 
       {isTutorSessionView ? (
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <div
               className={cn(
@@ -599,10 +601,10 @@ export function TutorTopBar({
                 "min-w-[15rem] justify-between gap-3",
               )}
             >
-              <span className="font-mono text-ui-2xs uppercase tracking-[0.18em] text-foreground/52">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                 Topic
               </span>
-              <span className="truncate text-sm text-foreground">
+              <span className="truncate text-[13px] text-zinc-200">
                 {topic || "Freeform"}
               </span>
             </div>
@@ -639,7 +641,7 @@ export function TutorTopBar({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "h-7 rounded-[0.2rem] px-2 font-mono text-ui-2xs uppercase tracking-[0.18em]",
+                    "h-7 rounded-[var(--ds-r-020)] px-2 font-mono text-ui-2xs uppercase tracking-[0.18em]",
                     CONTROL_PLANE_COLORS[getMethodStageColorKey(currentBlock)]
                       ?.badge || "bg-secondary/20 text-muted-foreground",
                   )}
@@ -836,6 +838,10 @@ export function TutorTopBar({
     <ViewSessionDialog
       session={viewingSession}
       onClose={() => setViewingSession(null)}
+      onResume={(sessionId) => {
+        setViewingSession(null);
+        onResumeSession(sessionId);
+      }}
     />
     </>
   );
@@ -844,9 +850,14 @@ export function TutorTopBar({
 interface ViewSessionDialogProps {
   session: TutorSessionSummary | null;
   onClose: () => void;
+  onResume: (sessionId: string) => void;
 }
 
-function ViewSessionDialog({ session, onClose }: ViewSessionDialogProps) {
+function ViewSessionDialog({
+  session,
+  onClose,
+  onResume,
+}: ViewSessionDialogProps) {
   const sessionId = session?.session_id ?? null;
   const { data: detail, isLoading, isError } = useQuery({
     queryKey: ["tutor-session-detail", sessionId],
@@ -918,6 +929,16 @@ function ViewSessionDialog({ session, onClose }: ViewSessionDialogProps) {
                 </div>
               )}
             </div>
+            <DialogFooter className="mt-4 border-t border-primary/15 pt-4">
+              <Button
+                type="button"
+                onClick={() => onResume(session.session_id)}
+                className="rounded-none border-2 border-primary font-arcade text-ui-2xs"
+              >
+                <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                RESUME SESSION
+              </Button>
+            </DialogFooter>
           </>
         ) : null}
       </DialogContent>

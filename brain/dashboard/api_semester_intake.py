@@ -326,6 +326,14 @@ def _clean_course_name(folder_name: str) -> str:
     return re.sub(r"\s+", " ", cleaned) or folder_name
 
 
+def _infer_course_code(*values: str) -> str | None:
+    for value in values:
+        match = re.search(r"\b(PHYT)\s*[_-]?\s*(\d{4})\b", value, flags=re.IGNORECASE)
+        if match:
+            return f"{match.group(1).upper()} {match.group(2)}"
+    return None
+
+
 def _is_global_schedule_folder(name: str) -> bool:
     lowered = name.lower()
     return "schedule" in lowered and (lowered.startswith("00") or "class" in lowered)
@@ -387,8 +395,40 @@ def _read_existing_course_summary() -> dict[str, int]:
     return summary
 
 
+def _read_existing_course_material_readiness() -> dict[int, dict[str, int]]:
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                d.course_id AS course_id,
+                COUNT(DISTINCT d.id) AS material_count,
+                COUNT(DISTINCT CASE WHEN e.rag_doc_id IS NOT NULL THEN d.id END) AS embedded_count
+            FROM rag_docs d
+            LEFT JOIN rag_embeddings e
+              ON e.rag_doc_id = d.id
+            WHERE d.course_id IS NOT NULL
+              AND COALESCE(d.corpus, 'materials') = 'materials'
+              AND COALESCE(d.enabled, 1) = 1
+            GROUP BY d.course_id
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    readiness: dict[int, dict[str, int]] = {}
+    for row in rows:
+        course_id = int(row[0])
+        readiness[course_id] = {
+            "material_count": int(row[1] or 0),
+            "embedded_count": int(row[2] or 0),
+        }
+    return readiness
+
+
 def _classify_intake_folder(root: Path) -> dict[str, Any]:
     existing_courses = _read_existing_course_summary()
+    existing_material_readiness = _read_existing_course_material_readiness()
     course_map: dict[str, dict[str, Any]] = {}
     global_schedule_files: list[dict[str, Any]] = []
     ignored_files: list[dict[str, Any]] = []
@@ -423,12 +463,16 @@ def _classify_intake_folder(root: Path) -> dict[str, Any]:
                 top_folder,
                 {
                     "name": _clean_course_name(top_folder),
+                    "code": None,
                     "folder_path": top_folder,
                     "syllabus_files": [],
                     "schedule_files": [],
                     "material_files": [],
                 },
             )
+            course_code = _infer_course_code(rel_path, filename, top_folder)
+            if course_code and not course.get("code"):
+                course["code"] = course_code
             if "syllabus" in roles:
                 course["syllabus_files"].append(payload)
             if "schedule" in roles:
@@ -442,7 +486,16 @@ def _classify_intake_folder(root: Path) -> dict[str, Any]:
     material_count = len(unassigned_material_files)
     for course in sorted(course_map.values(), key=lambda item: item["folder_path"].lower()):
         course_name_key = str(course["name"]).lower()
-        course_id = existing_courses.get(course_name_key)
+        course_code_key = str(course.get("code") or "").lower()
+        course_id = (
+            existing_courses.get(course_code_key)
+            if course_code_key
+            else None
+        ) or existing_courses.get(course_name_key)
+        material_readiness = existing_material_readiness.get(course_id or -1, {})
+        existing_material_count = int(material_readiness.get("material_count") or 0)
+        embedded_count = int(material_readiness.get("embedded_count") or 0)
+        has_materials = bool(course["material_files"]) or existing_material_count > 0
         syllabus_count += len(course["syllabus_files"])
         schedule_count += len(course["schedule_files"])
         material_count += len(course["material_files"])
@@ -450,9 +503,11 @@ def _classify_intake_folder(root: Path) -> dict[str, Any]:
             "course": "exists" if course_id else "missing",
             "syllabus": "found" if course["syllabus_files"] else "missing",
             "schedule": "found" if course["schedule_files"] else "missing",
-            "materials": "found" if course["material_files"] else "missing",
-            "embeddings": "pending",
-            "readyForTutor": False,
+            "materials": "found" if has_materials else "missing",
+            "embeddings": (
+                "ready" if embedded_count > 0 else "pending" if has_materials else "missing"
+            ),
+            "readyForTutor": bool(course_id and embedded_count > 0),
         }
         if course_id:
             course["course_id"] = course_id
@@ -544,7 +599,16 @@ def _insert_modules_and_objectives(
             module_id = int(cur.lastrowid)
             modules_created += 1
 
-        for objective in module.get("objectives") or []:
+        objectives = list(module.get("objectives") or [])
+        if not objectives:
+            objectives = [
+                {
+                    "loCode": f"MOD-{order_index or index + 1}",
+                    "title": f"Study {name}",
+                }
+            ]
+
+        for objective in objectives:
             title = str(objective.get("title") or "").strip()
             if not title:
                 continue
@@ -559,15 +623,25 @@ def _insert_modules_and_objectives(
                 """,
                 (course_id, module_id, title),
             )
-            if cur.fetchone():
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    """
+                    UPDATE learning_objectives
+                    SET group_name = COALESCE(NULLIF(group_name, ''), ?),
+                        updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (name, now, int(existing[0])),
+                )
                 continue
             cur.execute(
                 """
                 INSERT INTO learning_objectives (
-                    course_id, module_id, lo_code, title, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, 'not_started', ?, ?)
+                    course_id, module_id, lo_code, title, status, group_name, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 'not_started', ?, ?, ?)
                 """,
-                (course_id, module_id, lo_code, title, now, now),
+                (course_id, module_id, lo_code, title, name, now, now),
             )
             objectives_created += 1
 

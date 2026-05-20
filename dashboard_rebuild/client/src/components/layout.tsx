@@ -48,6 +48,7 @@ import {
   controlToggleButton,
 } from "@/components/shell/controlStyles";
 import { cn } from "@/lib/utils";
+import { useCanvasLocked } from "@/lib/canvasLock";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/use-toast";
@@ -118,7 +119,7 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
     tier: "primary",
     imageSrc: navTutorCustom,
     accentClass:
-      "brightness-[1.02] saturate-[1.08] drop-shadow-[0_0_18px_rgba(255,98,98,0.38)]",
+      "brightness-[1.02] saturate-[1.08] drop-shadow-[0_0_18px_rgba(255,92,92,0.38)]",
     shellStyle: {
       left: "61.54%",
       top: "31.93%",
@@ -226,7 +227,7 @@ const navButtonImageClass = (item: NavItem, isActive: boolean) =>
     item.tier === "primary"
       ? isActive
         ? "brightness-[1.1] saturate-[1.2] drop-shadow-[0_0_24px_rgba(255,74,74,0.42)] group-hover:brightness-[1.14] group-hover:saturate-[1.24] group-hover:drop-shadow-[0_0_28px_rgba(255,74,74,0.5)]"
-        : "opacity-[0.98] brightness-[0.97] saturate-[1.06] group-hover:opacity-100 group-hover:brightness-[1.07] group-hover:saturate-[1.14] group-hover:drop-shadow-[0_0_18px_rgba(255,96,96,0.3)]"
+        : "opacity-[0.98] brightness-[0.97] saturate-[1.06] group-hover:opacity-100 group-hover:brightness-[1.07] group-hover:saturate-[1.14] group-hover:drop-shadow-[0_0_18px_rgba(255,92,92,0.3)]"
       : isActive
         ? "brightness-[1.08] saturate-[1.18] drop-shadow-[0_0_22px_rgba(255,74,74,0.42)] group-hover:brightness-[1.12] group-hover:saturate-[1.22] group-hover:drop-shadow-[0_0_24px_rgba(255,74,74,0.46)]"
         : "opacity-[0.92] brightness-[0.78] saturate-[0.84] group-hover:opacity-100 group-hover:brightness-100 group-hover:saturate-[1.08] group-hover:drop-shadow-[0_0_14px_rgba(255,74,74,0.28)]",
@@ -235,16 +236,16 @@ const navButtonImageClass = (item: NavItem, isActive: boolean) =>
 
 const navShellLinkClass = (item: NavItem, isActive: boolean) =>
   cn(
-    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[1.4rem] pointer-events-auto",
-    "after:pointer-events-none after:absolute after:inset-[8%] after:rounded-[1.2rem] after:border-0 after:transition-[border-color,box-shadow,opacity] after:duration-200",
+    "group absolute z-10 flex cursor-pointer items-center justify-center rounded-[var(--ds-radius-xl)] pointer-events-auto",
+    "after:pointer-events-none after:absolute after:inset-[8%] after:rounded-[var(--ds-r-120)] after:border-0 after:transition-[border-color,box-shadow,opacity] after:duration-200",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
     item.tier === "primary"
       ? isActive
-        ? "after:border-red-300/55 after:shadow-[0_0_16px_rgba(255,82,82,0.32)]"
-        : "hover:after:border-red-300/35 hover:after:shadow-[0_0_14px_rgba(255,82,82,0.22)]"
+        ? "after:border-red-300/55 after:shadow-[0_0_16px_rgba(255,74,74,0.32)]"
+        : "hover:after:border-red-300/35 hover:after:shadow-[0_0_14px_rgba(255,74,74,0.22)]"
       : isActive
-        ? "after:border-red-300/45 after:shadow-[0_0_12px_rgba(255,82,82,0.24)]"
-        : "hover:after:border-red-300/28 hover:after:shadow-[0_0_10px_rgba(255,82,82,0.18)]",
+        ? "after:border-red-300/45 after:shadow-[0_0_12px_rgba(255,74,74,0.24)]"
+        : "hover:after:border-red-300/28 hover:after:shadow-[0_0_10px_rgba(255,74,74,0.18)]",
   );
 
 const notesDockStyle = (top: number | null): CSSProperties => ({
@@ -261,7 +262,7 @@ function BrainTitleChip({
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center rounded-full border border-red-500/60 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.18),rgba(0,0,0,0.82)_72%)] shadow-[0_0_18px_rgba(255,82,82,0.34),0_10px_20px_rgba(0,0,0,0.45)] backdrop-blur-md",
+        "relative inline-flex shrink-0 items-center justify-center rounded-full border border-red-500/60 bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.18),rgba(0,0,0,0.82)_72%)] shadow-[0_0_18px_rgba(255,74,74,0.34),0_10px_20px_rgba(0,0,0,0.45)] backdrop-blur-md",
         className,
       )}
     >
@@ -288,6 +289,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   const isBrainPage = currentPath === "/";
   const isTutorPage = currentPath === "/tutor";
   const isWorkspaceRoute = isBrainPage || isTutorPage;
+  // User-controlled full-canvas mode (Tutor only). OFF by default →
+  // page behaves exactly as before. ON → viewport-locked, chrome
+  // hidden, canvas fills the screen.
+  const canvasLockOn = useCanvasLocked();
+  const canvasLockActive = isTutorPage && canvasLockOn;
   const backdropImageClassName = isTutorPage
     ? "absolute inset-0 scale-[1.02] opacity-[0.56]"
     : "absolute inset-0 scale-[1.08] blur-[10px] opacity-[0.16]";
@@ -295,14 +301,14 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
     ? "center center"
     : "center calc(60% + 76px)";
   const backdropGlowClassName = isTutorPage
-    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(255,92,120,0.08),transparent_18%),radial-gradient(circle_at_50%_72%,rgba(255,70,112,0.08),transparent_28%),linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_24%,rgba(0,0,0,0.18)_64%,rgba(0,0,0,0.48)_100%)]"
-    : "absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,78,116,0.08),transparent_16%),radial-gradient(circle_at_50%_64%,rgba(255,64,105,0.05),transparent_24%),linear-gradient(180deg,rgba(0,0,0,0.82),rgba(0,0,0,0.56)_18%,rgba(0,0,0,0.64)_60%,rgba(0,0,0,0.92)_100%)]";
+    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(255,84,116,0.08),transparent_18%),radial-gradient(circle_at_50%_72%,rgba(255,68,104,0.08),transparent_28%),linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_24%,rgba(0,0,0,0.18)_64%,rgba(0,0,0,0.48)_100%)]"
+    : "absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,84,116,0.08),transparent_16%),radial-gradient(circle_at_50%_64%,rgba(255,68,104,0.05),transparent_24%),linear-gradient(180deg,rgba(0,0,0,0.82),rgba(0,0,0,0.56)_18%,rgba(0,0,0,0.64)_60%,rgba(0,0,0,0.92)_100%)]";
   const backdropToneClassName = isTutorPage
     ? "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),rgba(0,0,0,0.06)_22%,rgba(0,0,0,0.12)_54%,rgba(0,0,0,0.36)_100%)]"
-    : "absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,8,0.86),rgba(5,5,8,0.4)_24%,rgba(5,5,8,0.58)_72%,rgba(5,5,8,0.9)_100%)]";
+    : "absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,12,0.86),rgba(8,8,12,0.4)_24%,rgba(8,8,12,0.58)_72%,rgba(8,8,12,0.9)_100%)]";
   const backdropTextureClassName = isTutorPage
-    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,70,102,0.03),transparent_20%,transparent_80%,rgba(255,70,102,0.03))]"
-    : "absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,70,102,0.03),transparent_24%,transparent_76%,rgba(255,70,102,0.03))]";
+    ? "absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,68,104,0.03),transparent_20%,transparent_80%,rgba(255,68,104,0.03))]"
+    : "absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,255,255,0.02),transparent_18%),linear-gradient(90deg,rgba(255,68,104,0.03),transparent_24%,transparent_76%,rgba(255,68,104,0.03))]";
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState<NoteCategory>("notes");
   const [activeTab, setActiveTab] = useState<"all" | NoteCategory>("all");
@@ -777,7 +783,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "relative flex min-h-[100dvh] flex-col bg-transparent font-terminal text-foreground",
+        "relative flex w-full min-w-0 flex-col overflow-x-hidden bg-background font-terminal text-foreground",
+        // Canvas-lock ON (Tutor, user toggled): viewport-locked app
+        // shell. OFF / any other route: unchanged document-scroll growth
+        // (byte-identical to before this feature).
+        canvasLockActive ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]",
       )}
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -803,7 +813,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Top Nav — static header attached to normal page flow */}
       <header
         data-header-shell
-        className="relative z-20 border-b-4 border-red-700 shadow-[0_10px_30px_rgba(220,38,38,0.4)]"
+        className={cn(
+          "relative z-20 border-b-4 border-red-700 shadow-[0_10px_30px_rgba(220,38,38,0.4)]",
+          // Full-canvas lock: hide global nav for a full-bleed workspace.
+          canvasLockActive && "hidden",
+        )}
         data-header-state="expanded"
       >
         {/* Banner Image Background */}
@@ -825,7 +839,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex min-w-0 justify-center lg:hidden">
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
               <div className="mx-auto w-full max-w-[42rem]">
-                <div className="flex items-center gap-3 rounded-[1.2rem] border border-red-500/28 bg-[linear-gradient(180deg,rgba(18,0,0,0.92),rgba(6,0,0,0.96))] px-3 py-2.5 shadow-[0_0_18px_rgba(220,38,38,0.18),0_18px_36px_rgba(0,0,0,0.35)]">
+                <div className="flex items-center gap-3 rounded-[var(--ds-r-120)] border border-red-500/28 bg-[linear-gradient(180deg,rgba(18,0,0,0.92),rgba(10,4,7,0.96))] px-3 py-2.5 shadow-[0_0_18px_rgba(220,38,38,0.18),0_18px_36px_rgba(0,0,0,0.35)]">
                   <a
                     href="/"
                     onClick={(event) => handleNavActivate(event, "/")}
@@ -837,7 +851,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                       imageClassName="h-7 w-7"
                     />
                     <div className="min-w-0">
-                      <div className="font-arcade uppercase leading-none text-[#fff4ed] [text-shadow:0_0_12px_rgba(255,108,108,0.42)]">
+                      <div className="font-arcade uppercase leading-none text-[var(--ds-paper-warm)] [text-shadow:0_0_12px_rgba(255,108,108,0.42)]">
                         <span className="inline text-[0.65rem] tracking-[0.18em] sm:hidden">
                           PT STUDY
                         </span>
@@ -852,7 +866,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="shrink-0 rounded-[0.95rem] border-red-500/45 bg-black/40 px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[#fff4ed] hover:bg-red-900/30"
+                    className="shrink-0 rounded-[var(--ds-r-095)] border-red-500/45 bg-black/40 px-3 font-arcade text-ui-xs uppercase tracking-[0.16em] text-[var(--ds-paper-warm)] hover:bg-red-900/30"
                     onClick={() => setMobileNavOpen(true)}
                     data-testid="mobile-nav-trigger"
                     aria-label="Open study navigation"
@@ -905,7 +919,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                               setMobileNavOpen(false);
                             }}
                             className={cn(
-                              "flex items-center justify-between rounded-[1rem] border px-3 py-3 font-arcade text-ui-xs uppercase tracking-[0.16em] transition-colors",
+                              "flex items-center justify-between rounded-[var(--ds-r-100)] border px-3 py-3 font-arcade text-ui-xs uppercase tracking-[0.16em] transition-colors",
                               isActive
                                 ? "border-red-400/65 bg-red-900/30 text-white shadow-[0_0_14px_rgba(255,74,74,0.24)]"
                                 : "border-red-900/45 bg-black/45 text-red-100/86 hover:border-red-500/55 hover:bg-red-950/35",
@@ -943,7 +957,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                               setMobileNavOpen(false);
                             }}
                             className={cn(
-                              "flex items-center justify-between rounded-[1rem] border px-3 py-3 font-arcade text-ui-xs uppercase tracking-[0.16em] transition-colors",
+                              "flex items-center justify-between rounded-[var(--ds-r-100)] border px-3 py-3 font-arcade text-ui-xs uppercase tracking-[0.16em] transition-colors",
                               isActive
                                 ? "border-red-400/60 bg-red-900/28 text-white shadow-[0_0_12px_rgba(255,74,74,0.2)]"
                                 : "border-red-900/40 bg-black/40 text-red-100/84 hover:border-red-500/50 hover:bg-red-950/30",
@@ -986,7 +1000,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                     src={navBrainLogo}
                     alt=""
                     aria-hidden="true"
-                    className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(255,82,82,0.6)]"
+                    className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(255,74,74,0.6)]"
                   />
                 </a>
                 <a
@@ -1005,7 +1019,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                     src={navBrainLogo}
                     alt=""
                     aria-hidden="true"
-                    className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(255,82,82,0.6)]"
+                    className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(255,74,74,0.6)]"
                   />
                 </a>
 
@@ -1016,9 +1030,9 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                     onClick={(event) => handleNavActivate(event, "/")}
                     aria-label="Trey's Study System"
                   >
-                    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[4.8rem] w-[50rem] rounded-full bg-[radial-gradient(circle,rgba(255,84,84,0.46),transparent_72%)] blur-3xl" />
+                    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[4.8rem] w-[50rem] rounded-full bg-[radial-gradient(circle,rgba(255,92,92,0.46),transparent_72%)] blur-3xl" />
                     <span
-                      className="relative font-arcade uppercase leading-none whitespace-nowrap text-[#fff4ed] [text-shadow:0_0_18px_rgba(255,108,108,0.7),0_0_34px_rgba(255,92,92,0.28),0_5px_0_rgba(36,10,10,0.98)]"
+                      className="relative font-arcade uppercase leading-none whitespace-nowrap text-[var(--ds-paper-warm)] [text-shadow:0_0_18px_rgba(255,108,108,0.7),0_0_34px_rgba(255,92,92,0.28),0_5px_0_rgba(36,10,10,0.98)]"
                       style={{
                         fontSize: "clamp(2.06rem,3.42vw,3.18rem)",
                         letterSpacing: "0.11em",
@@ -1092,7 +1106,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-[0.95rem] border-primary/40 text-primary hover:bg-primary/20 hover:text-primary"
+                className="h-9 w-9 rounded-[var(--ds-r-095)] border-primary/40 text-primary hover:bg-primary/20 hover:text-primary"
                 aria-label="Close notes"
               >
                 <X className="h-3 w-3" />
@@ -1157,11 +1171,11 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                 placeholder="TYPE_NOTE_HERE..."
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
-                className="h-24 resize-none rounded-[1rem] border-primary/30 bg-black/45 font-mono text-sm leading-6 focus-visible:ring-primary"
+                className="h-24 resize-none rounded-[var(--ds-r-100)] border-primary/30 bg-black/45 font-mono text-sm leading-6 focus-visible:ring-primary"
                 data-testid="input-note-content"
               />
               <Button
-                className="w-full rounded-[1rem] font-arcade text-ui-xs"
+                className="w-full rounded-[var(--ds-r-100)] font-arcade text-ui-xs"
                 size="sm"
                 onClick={handleSaveNote}
                 disabled={!newNote.trim() || createNoteMutation.isPending}
@@ -1218,7 +1232,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
                         <div
                           className={cn(
-                            "space-y-2 min-h-[72px] rounded-[1rem] border border-transparent p-1",
+                            "space-y-2 min-h-[72px] rounded-[var(--ds-r-100)] border border-transparent p-1",
                             dragOverCategory === category.value &&
                               "border-primary/40",
                           )}
@@ -1251,7 +1265,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                               onDragEnd={handleDragEnd}
                               data-testid={`card-note-${note.id}`}
                               className={cn(
-                                "cursor-move rounded-[0.95rem] border border-[rgba(255,122,146,0.18)] bg-black/40 p-3 shadow-[0_10px_20px_rgba(0,0,0,0.18)] transition-all",
+                                "cursor-move rounded-[var(--ds-r-095)] border border-[rgba(255,118,144,0.18)] bg-black/40 p-3 shadow-[0_10px_20px_rgba(0,0,0,0.18)] transition-all",
                                 draggedNote?.id === note.id && "opacity-50",
                                 dragOverNote?.id === note.id &&
                                   dragOverNote?.type === category.value &&
@@ -1266,12 +1280,12 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                                     onChange={(e) =>
                                       setEditingContent(e.target.value)
                                     }
-                                    className="rounded-[0.85rem] border-primary bg-black/60 font-mono text-sm"
+                                    className="rounded-[var(--ds-r-085)] border-primary bg-black/60 font-mono text-sm"
                                   />
                                   <div className="flex gap-1">
                                     <Button
                                       size="sm"
-                                      className="h-8 flex-1 rounded-[0.85rem] font-arcade text-ui-xs"
+                                      className="h-8 flex-1 rounded-[var(--ds-r-085)] font-arcade text-ui-xs"
                                       onClick={() =>
                                         updateNoteMutation.mutate({
                                           id: note.id,
@@ -1284,7 +1298,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-8 rounded-[0.85rem] font-arcade text-ui-xs"
+                                      className="h-8 rounded-[var(--ds-r-085)] font-arcade text-ui-xs"
                                       onClick={() => setEditingId(null)}
                                     >
                                       <X className="w-3 h-3" />
@@ -1301,7 +1315,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-8 w-8 rounded-[0.85rem] p-0 hover:bg-primary/20"
+                                      className="h-8 w-8 rounded-[var(--ds-r-085)] p-0 hover:bg-primary/20"
                                       onClick={() => {
                                         setEditingId(note.id);
                                         setEditingContent(note.content);
@@ -1313,7 +1327,7 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-8 w-8 rounded-[0.85rem] p-0 text-red-400 hover:bg-red-500/20"
+                                      className="h-8 w-8 rounded-[var(--ds-r-085)] p-0 text-red-400 hover:bg-red-500/20"
                                       onClick={() =>
                                         deleteNoteMutation.mutate(note.id)
                                       }
@@ -1351,10 +1365,10 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         ref={notesDockRef}
         type="button"
         className={cn(
-          "fixed left-0 z-40 flex h-[3.75rem] w-[2.65rem] -translate-y-1/2 items-center justify-center overflow-hidden rounded-r-[1rem] border border-l-0 border-[rgba(255,122,146,0.28)] px-1 py-1.5 text-[#ffd6dd] shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,108,138,0.2)] transition-all duration-200 ease-out",
-          "before:absolute before:inset-[1px_0_1px_1px] before:rounded-r-[0.9rem] before:border before:border-[rgba(255,184,204,0.12)] before:bg-[linear-gradient(180deg,rgba(8,6,7,0.8),rgba(0,0,0,0.86)_100%)] before:content-['']",
-          "after:pointer-events-none after:absolute after:inset-y-2 after:right-1 after:w-[2px] after:rounded-full after:bg-[linear-gradient(180deg,transparent,rgba(255,122,146,0.8),transparent)] after:shadow-[0_0_10px_rgba(255,102,132,0.42)] after:content-['']",
-          "hover:text-white hover:translate-x-0.5 hover:shadow-[0_18px_32px_rgba(0,0,0,0.56),0_0_12px_rgba(255,102,132,0.16)]",
+          "fixed left-0 z-40 flex h-[3.75rem] w-[2.65rem] -translate-y-1/2 items-center justify-center overflow-hidden rounded-r-[var(--ds-r-100)] border border-l-0 border-[rgba(255,118,144,0.28)] px-1 py-1.5 text-[#ffd9e1] shadow-[0_14px_28px_rgba(0,0,0,0.48),0_0_0_1px_rgba(255,118,144,0.2)] transition-all duration-200 ease-out",
+          "before:absolute before:inset-[1px_0_1px_1px] before:rounded-r-[var(--ds-r-090)] before:border before:border-[rgba(255,185,199,0.12)] before:bg-[linear-gradient(180deg,rgba(8,8,12,0.8),rgba(0,0,0,0.86)_100%)] before:content-['']",
+          "after:pointer-events-none after:absolute after:inset-y-2 after:right-1 after:w-[2px] after:rounded-full after:bg-[linear-gradient(180deg,transparent,rgba(255,118,144,0.8),transparent)] after:shadow-[0_0_10px_rgba(255,98,126,0.42)] after:content-['']",
+          "hover:text-white hover:translate-x-0.5 hover:shadow-[0_18px_32px_rgba(0,0,0,0.56),0_0_12px_rgba(255,98,126,0.16)]",
           notesOpen && "pointer-events-none opacity-0",
           isDraggingNotesDock && "cursor-grabbing",
         )}
@@ -1368,25 +1382,40 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
         aria-label="Open notes panel"
       >
         <div className="relative z-10 flex items-center justify-center">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-[rgba(255,164,184,0.42)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_40%),linear-gradient(180deg,rgba(255,112,140,0.2),rgba(12,4,6,0.96))] shadow-[inset_0_0_0_1px_rgba(255,214,224,0.08),0_0_12px_rgba(255,96,128,0.16)]">
-            <BookOpen className="h-4 w-4 shrink-0 text-[#fff2f5] drop-shadow-[0_0_4px_rgba(255,120,132,0.42)]" />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--ds-r-090)] border border-[rgba(255,160,176,0.42)] bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.22),transparent_40%),linear-gradient(180deg,rgba(255,118,144,0.2),rgba(10,4,7,0.96))] shadow-[inset_0_0_0_1px_rgba(255,217,225,0.08),0_0_12px_rgba(255,98,126,0.16)]">
+            <BookOpen className="h-4 w-4 shrink-0 text-[#fff1f4] drop-shadow-[0_0_4px_rgba(255,120,132,0.42)]" />
           </span>
         </div>
       </button>
 
       {/* Hero portal — PageScaffold renders the page hero here, outside main */}
-      <div id="page-hero-portal" className="relative z-10" />
+      <div
+        id="page-hero-portal"
+        className={cn(
+          "relative z-10 w-full min-w-0 overflow-x-hidden",
+          canvasLockActive && "hidden",
+        )}
+      />
 
       <main
         className={cn(
-          "relative z-10 w-full flex-1",
-          isWorkspaceRoute ? "" : "px-2 py-3 sm:px-3 md:px-5 md:py-4",
+          "relative z-10 w-full min-w-0 flex-1 overflow-x-hidden",
+          // Canvas-lock ON: bounded flex child so the workspace scrolls
+          // internally. OFF: byte-identical to before — Brain no
+          // padding, non-workspace padded/content-growing.
+          canvasLockActive
+            ? "min-h-0 overflow-y-hidden"
+            : isWorkspaceRoute
+              ? ""
+              : "px-2 py-3 sm:px-3 md:px-5 md:py-4",
         )}
       >
         <div
           className={cn(
             "page-enter",
-            isWorkspaceRoute
+            canvasLockActive
+              ? "min-h-0 flex flex-col flex-1 h-full"
+              : isWorkspaceRoute
                 ? "min-h-full flex flex-col"
                 : "app-route-shell min-h-full",
           )}
@@ -1396,7 +1425,12 @@ function useLayoutContent({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="z-20 border-t border-secondary bg-black/95 py-2">
+      <footer
+        className={cn(
+          "z-20 border-t border-secondary bg-black/95 py-2",
+          canvasLockActive && "hidden",
+        )}
+      >
         <div className="container mx-auto px-4 flex justify-between items-center text-xs text-muted-foreground font-terminal">
           <div className="flex gap-4">
             <span>

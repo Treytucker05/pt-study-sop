@@ -773,6 +773,11 @@ def _objective_slug(description: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _is_nonblocking_moc_error(message: str) -> bool:
+    lowered = str(message or "").lower()
+    return "unmapped vault course" in lowered
+
+
 def _ensure_moc_context(
     *,
     course_id: Optional[int],
@@ -954,6 +959,11 @@ def _resolve_tutor_preflight(
         if map_of_contents_error:
             if "No mapped learning objectives were found" in map_of_contents_error:
                 resolved_objectives = []
+                map_of_contents_ctx = None
+                map_of_contents_error = None
+            elif material_ids and _is_nonblocking_moc_error(map_of_contents_error):
+                _LOG.warning("Proceeding without MoC context: %s", map_of_contents_error)
+                normalized_filter["map_of_contents_warning"] = map_of_contents_error
                 map_of_contents_ctx = None
                 map_of_contents_error = None
             else:

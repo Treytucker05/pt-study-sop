@@ -578,6 +578,67 @@ def ingest_url_document(
     )
 
 
+def ingest_pdf_by_chapters(
+    path: str,
+    *,
+    course_id: Optional[int] = None,
+    corpus: str = "materials",
+    folder_path: str = "",
+    topic_tags: Optional[Iterable[str]] = None,
+    max_pages: int = 60,
+) -> tuple[list[int], int, list[str]]:
+    """Split an oversized PDF into per-chapter docs and upsert each.
+
+    Returns ``(doc_ids, chapter_count, errors)``. Each chapter is keyed by
+    a STABLE logical source_path ``<path>#ch<NN>`` so re-syncs upsert
+    (checksum-skip) rather than duplicate. ``folder_path`` is preserved so
+    the course relink still maps every chapter to the book's class.
+    """
+    from text_extractor import split_pdf_into_chapters
+
+    chapters = split_pdf_into_chapters(path, max_pages=max_pages)
+    if not chapters:
+        return [], 0, [f"{path}: chapter split produced no extractable text"]
+
+    tags = ", ".join(t.strip() for t in (topic_tags or []) if t.strip())
+    base_name = Path(path).name
+    doc_ids: list[int] = []
+    errs: list[str] = []
+    for idx, ch in enumerate(chapters, start=1):
+        title = (ch.get("title") or f"Chapter {idx}").strip()
+        text = (ch.get("text") or "").strip()
+        if not text:
+            continue
+        logical_source = f"{path}#ch{idx:02d}"
+        content = f"# {base_name} — {title}\n\n{text}"
+        try:
+            did = _upsert_rag_doc(
+                source_path=logical_source,
+                doc_type="pdf",
+                course_id=course_id,
+                topic_tags=tags,
+                content=content,
+                checksum=_checksum(content),
+                metadata={
+                    "binary": True,
+                    "chapter_split": True,
+                    "chapter_of": base_name,
+                    "chapter_title": title,
+                    "pages": [ch.get("page_start"), ch.get("page_end")],
+                    "ingest_source": "rag_notes.ingest_pdf_by_chapters",
+                    "ingested_at": datetime.now().isoformat(timespec="seconds"),
+                },
+                corpus=corpus,
+                folder_path=folder_path,
+                enabled=1,
+                file_type="pdf",
+            )
+            doc_ids.append(int(did))
+        except Exception as exc:
+            errs.append(f"{logical_source}: {exc}")
+    return doc_ids, len(doc_ids), errs
+
+
 def _infer_doc_type_from_suffix(suffix: str) -> str:
     s = suffix.lower()
     if s in {".md", ".markdown"}:
@@ -703,7 +764,24 @@ def sync_folder_to_rag(
             # Progress reporting is best-effort and should never block sync.
             pass
 
+    # Oversized files (e.g. 100-300 MB reference textbooks) reliably blow
+    # past the per-file timeout and choke the heavy tiered extractor.
+    # Above the cap: oversized *PDFs* are split into per-chapter docs
+    # (content kept, fast); other oversized binaries are skipped (can't
+    # chapter-split a 200 MB video). Env-tunable; 0 disables the cap.
+    # 12 MB: real lecture materials are a few MB; textbooks are tens-to-
+    # hundreds of MB. Above this, PDFs route to the fast fitz chapter
+    # splitter instead of the slow MinerU/OCR extractor (which times out
+    # ~120 s/file on mid-size books). Env-tunable; 0 disables the cap.
+    try:
+        max_file_mb = float(os.environ.get("RAG_SYNC_MAX_FILE_MB", "12"))
+    except (TypeError, ValueError):
+        max_file_mb = 12.0
+    max_file_bytes = int(max_file_mb * 1024 * 1024) if max_file_mb > 0 else 0
+
     candidate_files: list[Path] = []
+    oversize_skips: list[str] = []
+    oversize_pdf_paths: set[str] = set()
     for dirpath, dirnames, filenames in os.walk(str(root)):
         dirnames[:] = [d for d in dirnames if d not in exclude_dir_names]
         for filename in filenames:
@@ -713,6 +791,21 @@ def sync_folder_to_rag(
             rel_file = os.path.relpath(str(file_path), str(root)).replace("\\", "/")
             if normalized_include_paths is not None and rel_file not in normalized_include_paths:
                 continue
+            if max_file_bytes:
+                try:
+                    size = file_path.stat().st_size
+                except OSError:
+                    size = 0
+                if size > max_file_bytes:
+                    if file_path.suffix.lower() == ".pdf":
+                        # Keep it: route through the chapter splitter below.
+                        oversize_pdf_paths.add(str(file_path))
+                    else:
+                        oversize_skips.append(
+                            f"{rel_file}: skipped — {size // (1024 * 1024)} MB "
+                            f"exceeds RAG_SYNC_MAX_FILE_MB={max_file_mb}"
+                        )
+                        continue
             candidate_files.append(file_path)
 
     total_files = len(candidate_files)
@@ -754,27 +847,82 @@ def sync_folder_to_rag(
             }
         )
 
-        doc_type = _infer_doc_type_from_suffix(file_path.suffix)
-        per_file_timeout = 120  # seconds — skip files that hang longer
-        try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    ingest_document,
-                    path=str(file_path),
-                    doc_type=doc_type,
+        # Oversized PDF → split into per-chapter docs instead of choking
+        # the heavy extractor. Content is kept; folder_path preserved so
+        # the course relink still maps each chapter to the book's class.
+        if str(file_path) in oversize_pdf_paths:
+            try:
+                ch_ids, ch_count, ch_errs = ingest_pdf_by_chapters(
+                    str(file_path),
                     course_id=course_id,
-                    topic_tags=["study-folder"],
                     corpus=corpus,
                     folder_path=rel_folder,
-                    enabled=1,
+                    topic_tags=["study-folder", "chapter-split"],
                 )
-                doc_id = future.result(timeout=per_file_timeout)
+                ingested_ids.extend(ch_ids)
+                errors.extend(ch_errs)
+                if ch_count > 0:
+                    processed += 1
+                elif not ch_errs:
+                    errors.append(
+                        f"{rel_file}: oversized PDF, no chapters extracted"
+                    )
+            except Exception as exc:
+                errors.append(f"{rel_file}: chapter split failed: {exc}")
+            _emit_progress(
+                {
+                    "phase": "syncing",
+                    "processed": processed,
+                    "total": total_files,
+                    "index": index,
+                    "current_file": rel_file,
+                    "errors": len(errors),
+                }
+            )
+            continue
+
+        doc_type = _infer_doc_type_from_suffix(file_path.suffix)
+        # Seconds to allow per file before skipping (env-tunable). The
+        # interactive web sync keeps the 120 s default so a slow file
+        # can't hang the request. A background batch run sets this to 0
+        # (or negative) => NO timeout, so a slow-but-correct extractor
+        # like Docling/OCR is allowed to run to completion.
+        try:
+            per_file_timeout = int(
+                os.environ.get("RAG_SYNC_PER_FILE_TIMEOUT", "120")
+            )
+        except (TypeError, ValueError):
+            per_file_timeout = 120
+        result_timeout = per_file_timeout if per_file_timeout > 0 else None
+        # NOTE: do NOT use ThreadPoolExecutor as a context manager here. Its
+        # __exit__ calls shutdown(wait=True), which blocks until the worker
+        # finishes — so a hung ingest (e.g. a pathological textbook PDF)
+        # would stall the WHOLE sync forever despite the timeout. We manage
+        # the executor manually and shut it down non-blocking on timeout so
+        # the sync skips the bad file and keeps going.
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(
+                ingest_document,
+                path=str(file_path),
+                doc_type=doc_type,
+                course_id=course_id,
+                topic_tags=["study-folder"],
+                corpus=corpus,
+                folder_path=rel_folder,
+                enabled=1,
+            )
+            doc_id = future.result(timeout=result_timeout)
             ingested_ids.append(int(doc_id))
             processed += 1
         except concurrent.futures.TimeoutError:
             errors.append(f"{file_path}: timed out after {per_file_timeout}s")
+            future.cancel()
         except Exception as exc:
             errors.append(f"{file_path}: {exc}")
+        finally:
+            # wait=False: never block the sync on a doomed worker thread.
+            executor.shutdown(wait=False, cancel_futures=True)
 
         _emit_progress(
             {
@@ -820,6 +968,11 @@ def sync_folder_to_rag(
             deleted_paths = list(prune_result.get("deleted_paths") or [])
         except Exception as exc:
             errors.append(f"stale_prune: {exc}")
+
+    # Surface non-PDF oversized skips alongside per-file errors so the
+    # caller/UI can report exactly what was left out and why.
+    if oversize_skips:
+        errors.extend(oversize_skips)
 
     return {
         "ok": len(errors) == 0,
@@ -1264,6 +1417,183 @@ def _cli_search(args: argparse.Namespace) -> None:
     print(format_search_results(results, args.query))
 
 
+def _relink_and_report() -> None:
+    """Force-rederive course_id from folder_path for every materials row,
+    then print the byClass distribution. Pure metadata — no extraction,
+    no embeddings, no dependency on a sync run. This is the sanctioned
+    tested operation (dashboard.api_tutor_materials), exposed as a CLI.
+    """
+    from collections import Counter
+
+    print("[relink] force-rederiving course_id from folder_path ...", flush=True)
+    try:
+        from dashboard.api_tutor_materials import _auto_link_materials_to_courses
+
+        conn = sqlite3.connect(DB_PATH, timeout=60)
+        link = _auto_link_materials_to_courses(conn, force=True)
+        conn.close()
+        print(f"[relink] {link}", flush=True)
+    except Exception as exc:
+        print(f"[relink ERROR] {exc}", flush=True)
+
+    conn = sqlite3.connect(DB_PATH, timeout=60)
+    cmap = {i: n for i, n in conn.execute("SELECT id,name FROM courses")}
+    rows = conn.execute(
+        "SELECT course_id, source_path FROM rag_docs "
+        "WHERE COALESCE(corpus,'materials')='materials' "
+        "AND folder_path IS NOT NULL AND TRIM(folder_path)!=''"
+    ).fetchall()
+    conn.close()
+    cnt = Counter(
+        cmap.get(c, "UNASSIGNED" if c is None else f"course#{c}") for c, _ in rows
+    )
+    chap = sum(1 for _, sp in rows if "#ch" in (sp or ""))
+    print(
+        f"\n[byClass] total materials rows={len(rows)} | chapter docs={chap}",
+        flush=True,
+    )
+    for k, v in sorted(cnt.items(), key=lambda x: -x[1]):
+        print(f"  {v:5d}  {k}", flush=True)
+
+
+def _cli_embed(args: argparse.Namespace) -> None:
+    """Embed the materials corpus into ChromaDB (semantic retrieval).
+
+    Ingestion/classification works without this, but the tutor's
+    semantic search over the library is empty until docs are embedded.
+    embed_rag_docs has its own per-doc timeout (hang-resistant) and is
+    incremental (skips already-embedded, unchanged docs). Safe to run
+    detached; re-runnable.
+    """
+    import time as _time
+
+    from tutor_rag import embed_rag_docs
+
+    corpus = args.corpus or "materials"
+    last = [0.0]
+
+    def _progress(done: int, total: int, current: str) -> None:
+        now = _time.time()
+        if now - last[0] >= 5 or done >= total:
+            last[0] = now
+            print(
+                f"[embed] {done}/{total} {os.path.basename(current or '')}",
+                flush=True,
+            )
+
+    print(f"[embed] corpus={corpus} starting ...", flush=True)
+    result = embed_rag_docs(corpus=corpus, progress_callback=_progress)
+    print(f"[embed] DONE {result}", flush=True)
+
+
+def _cli_relink(args: argparse.Namespace) -> None:
+    """Just run the folder->course relink + byClass (no sync/extraction)."""
+    _relink_and_report()
+
+
+def _cli_folder_sync(args: argparse.Namespace) -> None:
+    """Background bulk-sync a materials root folder, then force-relink.
+
+    This is the long-running batch path: it runs the SAME pipeline as the
+    interactive "Sync Root Folder" (Docling extraction, chapter-split for
+    big PDFs) but with a generous 15-min per-file timeout (vs the web
+    sync's 120 s) so slow OCR finishes while a genuine Docling hang is
+    still skipped. Safe to launch detached (nohup/&).
+    """
+    import time as _time
+
+    root = (
+        args.folder
+        or os.environ.get("TUTOR_MATERIALS_DIR")
+        or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+    )
+    if not root:
+        print("[ERROR] No folder. Pass --folder or set TUTOR_MATERIALS_DIR.")
+        raise SystemExit(2)
+    root = str(Path(root).expanduser())
+    if not Path(root).is_dir():
+        print(f"[ERROR] Not a directory: {root}")
+        raise SystemExit(2)
+
+    # Generous default (15 min/file) — NOT unlimited. Docling can truly
+    # hang (not just be slow) on a pathological PDF; with no timeout one
+    # bad file freezes the whole batch forever. 900 s lets legit slow OCR
+    # finish while still skipping a genuine hang. Pass --timeout 0 to
+    # force unlimited (use with care).
+    os.environ["RAG_SYNC_PER_FILE_TIMEOUT"] = (
+        str(args.timeout) if args.timeout is not None else "900"
+    )
+    if args.max_file_mb is not None:
+        os.environ["RAG_SYNC_MAX_FILE_MB"] = str(args.max_file_mb)
+
+    last = [0.0]
+
+    def _progress(p: dict) -> None:
+        now = _time.time()
+        if now - last[0] >= 5 or p.get("phase") != "syncing":
+            last[0] = now
+            print(
+                f"[{p.get('phase')}] {p.get('processed')}/{p.get('total')} "
+                f"idx={p.get('index')} err={p.get('errors')} "
+                f"cur={p.get('current_file')}",
+                flush=True,
+            )
+
+    only_paths: Optional[set] = None
+    only = getattr(args, "only", None)
+    if only:
+        needle = only.replace("\\", "/").strip("/").lower()
+        only_paths = set()
+        for dp, _dn, fns in os.walk(root):
+            for fn in fns:
+                rel = os.path.relpath(
+                    os.path.join(dp, fn), root
+                ).replace("\\", "/")
+                if needle in rel.lower():
+                    only_paths.add(rel)
+        print(
+            f"[folder-sync] --only '{only}' -> {len(only_paths)} matching "
+            f"file(s); other docs untouched (prune skipped).",
+            flush=True,
+        )
+        if not only_paths:
+            print("[folder-sync] no files match --only; nothing to do.", flush=True)
+            return
+
+    print(
+        f"[folder-sync] root={root} "
+        f"per_file_timeout={os.environ['RAG_SYNC_PER_FILE_TIMEOUT']} "
+        f"max_file_mb={os.environ.get('RAG_SYNC_MAX_FILE_MB', '12')}",
+        flush=True,
+    )
+    result = sync_folder_to_rag(
+        root,
+        corpus="materials",
+        course_id=None,
+        include_paths=only_paths,
+        progress_callback=_progress,
+    )
+    print(
+        f"[sync done] processed={result.get('processed')}/{result.get('total')} "
+        f"failed={result.get('failed')} deleted={result.get('deleted')}",
+        flush=True,
+    )
+    for e in (result.get("errors") or [])[:15]:
+        print("  - ", e, flush=True)
+
+    _relink_and_report()
+
+    if args.embed:
+        print("[embed] running embeddings (slow) ...", flush=True)
+        try:
+            from tutor_rag import embed_rag_docs
+
+            print(f"[embed] {embed_rag_docs(corpus='materials')}", flush=True)
+        except Exception as exc:
+            print(f"[embed ERROR] {exc}", flush=True)
+    print("[folder-sync] DONE", flush=True)
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         description="Minimal RAG helper for markdown notes (Brain/pt-study)."
@@ -1285,6 +1615,61 @@ def main(argv: Optional[List[str]] = None) -> None:
         help="Optional topic tags to associate (space-separated; e.g. hip gait anatomy)",
     )
     ingest_p.set_defaults(func=_cli_ingest)
+
+    fs_p = subparsers.add_parser(
+        "folder-sync",
+        help="Background bulk-sync a materials root folder into rag_docs "
+        "(no per-file timeout) then force-relink each file to its class.",
+    )
+    fs_p.add_argument(
+        "--folder",
+        help="Root folder (default: $TUTOR_MATERIALS_DIR / $PT_SCHOOL_MATERIALS_DIR)",
+    )
+    fs_p.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        help="Per-file timeout seconds (default: 0 = unlimited, for batch)",
+    )
+    fs_p.add_argument(
+        "--max-file-mb",
+        type=float,
+        default=None,
+        dest="max_file_mb",
+        help="Chapter-split PDFs larger than this many MB (default: 12)",
+    )
+    fs_p.add_argument(
+        "--embed",
+        action="store_true",
+        help="Also run embeddings after relink (slow; optional)",
+    )
+    fs_p.add_argument(
+        "--only",
+        default=None,
+        help="Only (re)sync files whose path contains this substring "
+        "(e.g. 'Mobility in Context'); prune is skipped, other docs "
+        "left untouched. Ideal after OCR'ing one book.",
+    )
+    fs_p.set_defaults(func=_cli_folder_sync)
+
+    relink_p = subparsers.add_parser(
+        "relink",
+        help="Force-rederive course_id from folder_path for all materials "
+        "rows + print byClass (no sync/extraction; pure metadata).",
+    )
+    relink_p.set_defaults(func=_cli_relink)
+
+    embed_p = subparsers.add_parser(
+        "embed",
+        help="Embed a corpus into ChromaDB for semantic retrieval "
+        "(incremental, hang-resistant; default corpus=materials).",
+    )
+    embed_p.add_argument(
+        "--corpus",
+        default="materials",
+        help="Corpus to embed (default: materials)",
+    )
+    embed_p.set_defaults(func=_cli_embed)
 
     search_p = subparsers.add_parser(
         "search", help="Search ingested notes for a query string"

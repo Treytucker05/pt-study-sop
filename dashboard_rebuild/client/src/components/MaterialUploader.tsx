@@ -16,10 +16,17 @@ const ACCEPTED = ".pdf,.md,.docx,.pptx,.txt,.mp4";
 
 interface MaterialUploaderProps {
   courseId?: number;
+  role?: "study" | "setup";
+  setupKind?: "syllabus" | "schedule" | "syllabus_schedule" | "course_setup";
   onUploadComplete?: () => void;
 }
 
-export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploaderProps) {
+export function MaterialUploader({
+  courseId,
+  role = "study",
+  setupKind,
+  onUploadComplete,
+}: MaterialUploaderProps) {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -50,7 +57,11 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
 
     for (const file of queue) {
       try {
-        await api.tutor.uploadMaterial(file, { course_id: courseId });
+        await api.tutor.uploadMaterial(file, {
+          course_id: courseId,
+          ...(role !== "study" ? { library_role: role } : {}),
+          ...(setupKind ? { setup_kind: setupKind } : {}),
+        });
         successes++;
       } catch (err) {
         failures++;
@@ -67,7 +78,7 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
       queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
       onUploadComplete?.();
     }
-  }, [queue, courseId, queryClient, onUploadComplete]);
+  }, [queue, courseId, role, setupKind, queryClient, onUploadComplete]);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {

@@ -2,6 +2,46 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-05-19 - Tutor study run epic (#160–#166)
+
+- Shipped General Q&A + teach gate, study-run lifecycle hero, multi-leg teach list, versioned working summaries, prompt assembler (summary + recency tail), and polish draft checkpoint/final flow on branch `design-system/token-remediation` (`b3f1e476`).
+- Closed GitHub #160–#166.
+- Validation: pytest tutor dual-mode/lifecycle/memory (13), Vitest tutor suite (117), `npm run build`, `./scripts/tutor-browser-dogfood.sh`.
+
+## 2026-05-15 - Library catalog-only boundary
+
+- Simplified `/library` into an uploaded-file catalog and upload surface: primary tabs are now `All Files` and `Upload`.
+- Removed Library workflow paths for Semester Intake, Folder Sync, Tutor selection/handoff, Course Setup processing, Send to Priming, Obsidian destination, and PT School source refresh/import.
+- Added file search across uploaded Library rows and kept setup files visible as normal catalog rows with a `SETUP` badge.
+- Validation:
+  - `npm run test -- client/src/pages/__tests__/library.test.tsx`
+  - `npm run check`
+  - `npm run build`
+  - Built-in browser verification at `http://127.0.0.1:5127/library`; `All Files` and `Upload` render, search exists, and removed intake/Tutor/Obsidian controls are absent.
+
+## 2026-05-14 - Library visual design tightened
+
+- Made `/library` calmer and easier to read by reducing the Library hero/status strip height, muting the red HUD glow, and shifting the page-specific palette toward graphite surfaces with crimson accents.
+- Converted the Library workflow selector into semantic tabs so Source, Course Setup, Study Materials, Tutor Handoff, and Advanced behave like the primary navigation for the page.
+- Increased the readability of Library helper text, course rail rows, workflow tabs, and action controls while preserving the existing Library upload, intake, folder sync, and Tutor handoff behavior.
+- Validation:
+  - `npm run test -- client/src/pages/__tests__/library.test.tsx`
+  - `npm run check`
+  - `npm run build`
+  - Browser verification at `http://127.0.0.1:5127/library`; workflow tabs clicked successfully and console logs stayed clean.
+
+## 2026-05-14 - Library primary tabs simplified
+
+- Simplified `/library` primary navigation to the two user-facing surfaces Trey kept: `Study Materials` and `Add Files`.
+- Removed Course Setup, Tutor Handoff, and Advanced from the primary tab row while preserving setup upload, syllabus/schedule setup source rows, setup-to-Priming, one-file Study launch, and selective import/sync behavior.
+- Moved setup files into a compact syllabus/schedule collapsible inside Study Materials and kept Tutor selection controls inline instead of as a separate Tutor Handoff destination.
+- Renamed the inline handoff controls from vague `Study Run` language to `Selected for Tutor`, `Use Visible`, and `Add Visible`.
+- Validation:
+  - `npm run test -- client/src/pages/__tests__/library.test.tsx`
+  - `npm run check`
+  - `npm run build`
+  - Browser verification at `http://127.0.0.1:5127/library`; only Study Materials and Add Files appeared as primary tabs, both rendered correctly, and console logs stayed clean.
+
 ## 2026-04-01 - KWIK Hook aligned to literal word-sound -> meaning -> link flow
 
 - Rewrote `sop/library/methods/M-ENC-001.yaml` so full `KWIK Hook` now literally walks through `Word Sound -> Real Meaning -> Meaning Picture -> Link -> Personalize -> Lock`, which matches the mnemonic flow Trey wants to use during study.
@@ -2598,3 +2638,91 @@ Recommended next steps:
 - Added the Library `SEMESTER INTAKE` panel with folder scan, course readiness counts, and apply controls for the Mac PT School folder.
 - Added semester intake, fresh-DB, and Mac-local integration precondition regression tests.
 - Validation: `pytest brain/tests/ -q`; `npm run test`; `npm run check`; `npm run build`; `bash -n scripts/start_dashboard_macos.sh`.
+
+## 2026-05-13 - Complete study loop map, real-folder apply, and Tutor readiness
+
+- Added `docs/root/STUDY_LOOP_FLOW_AND_GAP_REVIEW.md` with the current coursework-to-study loop, Mermaid flowchart, validation matrix, gap register, and study-now handoff.
+- Real PT School preview on `/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School` found 3 course folders, 6 syllabus files, 6 schedule files, 27 material files, 14 ignored/admin files, and no unassigned material files.
+- Backed up `brain/data/pt_study.db` to `brain/data/backups/pt_study_before_study_loop_apply_2026-05-13.db`, then applied reviewed structure only: 0 new courses, 3 updated courses, 6 setup files parsed, 14 grouped objectives created, no setup parse errors, and no material sync jobs.
+- Fixed real study blockers: course-code matching for typo folders, module fallback objectives/grouping, material-backed Tutor preflight when Obsidian course mapping is absent, and preview readiness from existing embedded `rag_docs`.
+- Verified Professionalism Week 1 can preflight and restore as session `tutor-20260513-101225-0c7ef7`; Library and Tutor browser screenshots rendered. Full model-backed `live_tutor_smoke.py` turn was deferred because it can send coursework to the configured external LLM provider.
+- Validation: `npm run check`; `npm run build`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `pytest brain/tests/test_semester_intake.py -q`; focused Tutor preflight regression tests.
+
+## 2026-05-13 - Dashboard high-CPU material sync fix
+
+- Reviewed `scratch/bug_dashboard_high_cpu_2026-05-13.md`, `brain/dashboard_web.py`, `dashboard.create_app`, the macOS launcher, request-triggered background jobs, and material sync/embedding flow.
+- Confirmed no dashboard process was currently listening on `127.0.0.1:5127`, so the previously hot process had already been killed before this fix pass.
+- Root cause addressed: `_launch_materials_sync_job()` embedded the entire `materials` corpus after a selected course/folder sync. That could make one coursework intake keep the Flask process busy across unrelated library files.
+- Added `rag_doc_ids` scoping to `embed_rag_docs()` and now pass the `doc_ids` returned by `sync_folder_to_rag()`, so post-sync embedding is limited to the files touched by that job.
+- Added regression coverage in `test_tutor_material_pipeline_certification.py` proving sync jobs pass only their synced document IDs into embedding.
+- Validation: `.venv/bin/python -m pytest brain/tests/test_harness_startup.py brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_tutor_rag_embedding_provider.py brain/tests/test_semester_intake.py -q` passed.
+
+## 2026-05-13 - Library explicit file loading
+
+- Changed Library so folder-based workflows no longer imply mass loading.
+- Semester Intake still scans the semester folder for classification, syllabus, schedule, and course setup, but material files start unselected and only checked files are included in the apply payload.
+- Folder Sync preview now starts with zero selected files after scan; `SYNC SELECTED FILES` stays disabled until at least one file is checked.
+- Added file-level checkbox labels for Semester Intake and Folder Sync so tests and keyboard/screen-reader flows can target exact files.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`.
+
+## 2026-05-13 - Library course operations redesign
+
+- Redesigned `/library` around a course-first operations workflow: left Course Rail, central Add Coursework source switcher, Study Readiness handoff panel, and cleaner material table flow.
+- Course names are now the primary navigation label, with PHYT codes shown as secondary metadata.
+- Consolidated Semester Intake, Folder Sync, and Direct Upload into one `ADD COURSEWORK` control area so only one source workflow is active at a time.
+- Removed the redundant lower workflow card stack and moved Tutor queue actions into the single `STUDY READINESS` panel.
+- Added compact Library hero styling so the actual course/material workspace is visible much sooner in narrow in-app browser windows.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; `curl -fsS http://127.0.0.1:5127/api/brain/status`; built-in browser DOM verification for `/library`.
+
+## 2026-05-15 - Library readable file viewer fix
+
+- Fixed `/library` material catalog metadata overlap by widening the table shell and giving the Type column room to wrap multiple badges such as file type, `COURSE REF`, and Docling asset counts.
+- Fixed the extracted-material viewer so the document body is the scrollable reader instead of being clipped by shared HUD panel overflow styling.
+- Increased material-reader typography and cleaned dialog description markup so long extracted PDFs/DOCX/PPTX content is readable and valid HTML.
+- Added Library regression coverage for opening extracted material content in a scrollable reader.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed reader scrollTop changes inside the modal and console logs stay clean.
+
+## 2026-05-15 - Library material reader heading font fix
+
+- Fixed `/library` material content headings so extracted documents use readable sans typography instead of the global arcade heading treatment, which could make letters such as `T` appear missing or broken.
+- Confirmed the extracted material text still includes `t/T` characters; the issue was rendering-only, not extraction loss.
+- Added a scoped `library-material-markdown` reader class and regression coverage so document headings cannot silently fall back to `font-arcade`.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed reader headings render with system sans, normal tracking, normal case, and clean console logs.
+
+## 2026-05-15 - Library material reader table fix
+
+- Fixed extracted Markdown tables in `/library` material content so each table renders inside a horizontal scroll wrapper instead of squeezing or overflowing the document reader.
+- Added scoped table reader CSS for normal cell wrapping, top-aligned cells, readable sans text, and wide-table horizontal scroll.
+- Added Library regression coverage proving extracted tables render through the table-scroll wrapper.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `http://127.0.0.1:5127/library` confirmed a real extracted material table renders with 4 table wrappers, scrollable overflow, wrapped cells, and clean console logs.
+
+## 2026-05-15 - Library material reader extraction cleanup
+
+- Fixed `/library` material content cleanup for embedded-PDF private-use glyphs that rendered as blocky missing letters, normalizing examples such as `\ue062 ere` -> `There`, `\ue062 ank` -> `Thank`, and `\ue0bb erapy` -> `Therapy`.
+- Tightened extracted-document formatting: the modal title now uses the material filename with readable sans typography, and the document body uses a narrower `86ch` reading column with improved paragraph spacing.
+- Added tests for private-use glyph cleanup, split-ligature cleanup, quoted-phrase safety, and the narrower material reader class.
+- Backed up `brain/data/pt_study.db` to `brain/data/backups/pt_study_before_extract_text_normalize_20260515_025808.db`, then normalized existing extracted rows in place so the current Library view is cleaned immediately.
+- Validation: `.venv/bin/python -m pytest brain/tests/test_text_extractor.py -q`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed the cleaned PDF text and readable modal formatting.
+
+## 2026-05-15 - Library live PT School folder rail
+
+- Fixed `/library` Folders rail so it scans the configured PT School source folder through `/api/tutor/materials/sync/preview` instead of deriving folder names only from already-uploaded `rag_docs`.
+- Folder counts now reflect live PT School source files while the material table remains catalog-only for uploaded Library files.
+- Added a Refresh source folders control and copy that explains counts are source files but rows are uploaded Library files.
+- Added regression coverage for env-backed sync preview with omitted `folder_path` and Library source-tree folder rendering.
+- Validation: `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`; `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed Dx Mgmt, Cardiovascular Pulmonary, class schedules, and other OneDrive PT School source folders appear in the Folders rail.
+
+## 2026-05-15 - Library source-file upload picker
+
+- Added a source-file picker to `/library` Upload: selecting a live PT School folder opens Upload and lists source files that are not already matched to uploaded Library rows.
+- Each source-file candidate has an explicit checkbox and `Upload Selected` action backed by the existing selected-file sync endpoint, keeping imports file-by-file instead of bulk folder ingestion.
+- Converted source folder rail rows from custom `div role="button"` controls to real buttons so browser clicks reliably activate folder selection.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `.venv/bin/python -m pytest brain/tests/test_tutor_material_pipeline_certification.py -q`; `npm run check`; `npm run build`; built-in browser verification on `/library` confirmed `10_Dx Mgmt Integumentary` opens Upload with source checkboxes and a checked candidate updates the button to `Upload Selected (1)`.
+
+## 2026-05-15 - Library file explorer table controls
+
+- Added basic file-explorer behavior to the `/library` file table: column widths are stateful, separators drag-resize, double-click auto-fits to visible file text, and headers can be dragged to reorder columns.
+- Added simple header filters for Title, Folder, Type, and Status while preserving the catalog-only Library boundary.
+- Persisted column width/order preferences in local storage and hardened table-state loading against invalid stored JSON.
+- Fixed right-edge filter menus to align inward so Type/Status menus do not clip their Clear/Done controls.
+- Validation: `npm run test -- client/src/pages/__tests__/library.test.tsx`; `npm run check`; `npm run build`; built-in browser verification before the final alignment tweak confirmed header controls render and the Type filter narrowed 11 rows to 1 TXT row. The final post-build reload was blocked by Browser Use URL policy, so the next operator refresh should visually confirm the right-edge menu placement.

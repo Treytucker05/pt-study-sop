@@ -26,7 +26,7 @@ export function MemoryPanel({
 
   return (
     <div className="space-y-4 font-mono text-sm text-foreground/78">
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
@@ -77,11 +77,11 @@ export function MemoryPanel({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
-              Compaction state
+              Context pressure
             </div>
             <div className="mt-1 text-sm text-foreground">
               {status.compactionState.label}
@@ -102,16 +102,39 @@ export function MemoryPanel({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/10 bg-black/10 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
-          History
+          Working summary
+        </div>
+        {status.workingSummary ? (
+          <>
+            <div className="mt-1 text-sm text-foreground">
+              {status.workingSummary.versionLabel}
+            </div>
+            <div className="mt-1 text-sm text-foreground/72">
+              {status.workingSummary.summary}
+            </div>
+            <div className="mt-2 text-xs text-foreground/58">
+              {status.workingSummary.createdAtLabel}
+            </div>
+          </>
+        ) : (
+          <div className="mt-1 text-sm text-foreground/72">
+            No working summary yet. Use Update working summary after teach turns.
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-[var(--ds-r-085)] border border-primary/10 bg-black/10 p-3">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
+          Capsule history
         </div>
         {historyEntries.length > 0 ? (
           <div className="mt-3 space-y-2">
             {historyEntries.map((entry) => (
               <div
                 key={entry.id}
-                className="rounded-[0.85rem] border border-primary/12 bg-black/15 p-3"
+                className="rounded-[var(--ds-r-085)] border border-primary/12 bg-black/15 p-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>

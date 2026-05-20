@@ -15,6 +15,7 @@ import hashlib
 import importlib.util
 import logging
 import inspect
+import os
 import re
 import subprocess
 import tempfile
@@ -25,6 +26,12 @@ from typing import Optional
 from path_utils import resolve_existing_path
 
 logger = logging.getLogger(__name__)
+
+_PDF_PRIVATE_USE_REPLACEMENTS: dict[str, str] = {
+    "\ue062": "Th",
+    "\ue0bb": "Th",
+    "\uf0e0": " -> ",
+}
 
 # ---------------------------------------------------------------------------
 # Tier availability checks (cached — only run once per process)
@@ -155,6 +162,157 @@ def _extract_pdf_pdfplumber(path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Chapter splitter — for huge textbook PDFs that choke the heavy extractor
+# ---------------------------------------------------------------------------
+
+def _pdf_text_layer(path: Path) -> tuple[str, int, int]:
+    """Fast probe: return (text, char_count, page_count) from the PDF's
+    embedded text layer via PyMuPDF. Milliseconds even for big files;
+    used to decide whether we can skip the heavy Docling pipeline
+    (which can hang on perfectly text-extractable PDFs). Returns
+    ("", 0, 0) if PyMuPDF is unavailable or the file can't be opened.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except Exception:
+        return "", 0, 0
+    try:
+        doc = fitz.open(str(path))
+    except Exception:
+        return "", 0, 0
+    try:
+        parts: list[str] = []
+        for page in doc:
+            try:
+                parts.append(page.get_text())
+            except Exception:
+                continue
+        text = "\n".join(parts)
+        return text, len(text.strip()), doc.page_count
+    finally:
+        try:
+            doc.close()
+        except Exception:
+            pass
+
+
+def _has_rich_text_layer(char_count: int, page_count: int) -> bool:
+    """Heuristic: a PDF with a genuine text layer yields lots of text
+    per page. Scanned/image-only PDFs yield ~none. Require a solid
+    floor AND a per-page density so sparse image-heavy decks still go
+    to Docling. Override with PDF_FORCE_DOCLING=1.
+    """
+    if os.environ.get("PDF_FORCE_DOCLING", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    ):
+        return False
+    if page_count <= 0:
+        return False
+    return char_count >= max(1000, 100 * page_count)
+
+
+def split_pdf_into_chapters(
+    path: str,
+    *,
+    max_pages: int = 60,
+    min_chars: int = 200,
+) -> list[dict]:
+    """Split a PDF into chapter-sized text segments using its embedded TOC.
+
+    Huge textbooks (100-300 MB, 800-1800 pages) reliably hang the heavy
+    tiered extractor (MinerU/OCR on the whole book). But fast page-level
+    text extraction (PyMuPDF) per chapter does not. This reads the PDF
+    outline, derives top-level (chapter) page ranges, sub-splits any
+    range longer than ``max_pages``, and returns one entry per segment::
+
+        [{"title", "text", "page_start", "page_end"}, ...]
+
+    Falls back to fixed ``max_pages`` windows when there is no usable
+    outline. Returns ``[]`` on any failure so callers can degrade
+    gracefully (skip the file) instead of crashing the sync.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except Exception as exc:  # pragma: no cover - env without PyMuPDF
+        logger.warning("split_pdf_into_chapters: PyMuPDF unavailable: %s", exc)
+        return []
+
+    try:
+        doc = fitz.open(path)
+    except Exception as exc:
+        logger.warning("split_pdf_into_chapters: cannot open %s: %s", path, exc)
+        return []
+
+    try:
+        page_count = doc.page_count
+        if page_count <= 0:
+            return []
+
+        # 0-based [start, end) segments from level-1 TOC entries.
+        try:
+            toc = doc.get_toc(simple=True) or []
+        except Exception:
+            toc = []
+        level1 = [
+            (int(entry[2]) - 1, str(entry[1]).strip())
+            for entry in toc
+            if len(entry) >= 3 and entry[0] == 1 and 1 <= int(entry[2]) <= page_count
+        ]
+
+        raw_segments: list[tuple[str, int, int]] = []
+        if len(level1) >= 2:
+            for i, (start, title) in enumerate(level1):
+                end = level1[i + 1][0] if i + 1 < len(level1) else page_count
+                if end > start:
+                    raw_segments.append((title or f"Section {i + 1}", start, end))
+        if not raw_segments:
+            # No usable outline → fixed page windows.
+            for i, start in enumerate(range(0, page_count, max_pages)):
+                end = min(start + max_pages, page_count)
+                raw_segments.append((f"Pages {start + 1}-{end}", start, end))
+
+        # Sub-split any segment longer than max_pages so no piece is huge.
+        segments: list[tuple[str, int, int]] = []
+        for title, start, end in raw_segments:
+            if end - start <= max_pages:
+                segments.append((title, start, end))
+                continue
+            part = 1
+            for w_start in range(start, end, max_pages):
+                w_end = min(w_start + max_pages, end)
+                segments.append((f"{title} (part {part})", w_start, w_end))
+                part += 1
+
+        results: list[dict] = []
+        for title, start, end in segments:
+            chunks: list[str] = []
+            for pno in range(start, end):
+                try:
+                    chunks.append(doc.load_page(pno).get_text())
+                except Exception:
+                    continue
+            text = "\n".join(chunks).strip()
+            if len(text) < min_chars:
+                continue  # cover/blank/figure-only segment — skip
+            results.append(
+                {
+                    "title": title,
+                    "text": text,
+                    "page_start": start + 1,
+                    "page_end": end,
+                }
+            )
+        return results
+    finally:
+        try:
+            doc.close()
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher — tries tiers in order, falls through gracefully
 # ---------------------------------------------------------------------------
 
@@ -172,6 +330,30 @@ def _has_garbled_content(content: str, threshold: float = 0.05) -> bool:
     bad += sum(len(m.group()) for m in re.finditer(r"GLYPH<[^>]*>", content))
     bad += sum(1 for c in content if "\u0100" <= c <= "\u024f")
     return bad / n > threshold
+
+
+def normalize_extracted_text(content: str) -> str:
+    """Clean common embedded-font artifacts from extracted course materials."""
+    if not content:
+        return content
+
+    text = content
+    for glyph, replacement in _PDF_PRIVATE_USE_REPLACEMENTS.items():
+        text = text.replace(glyph, replacement)
+
+    # Some PDFs extract ligatures as separated fragments: e ff orts, con fi dence.
+    text = re.sub(r"(?<=\w)\s+(ffi|ffl|fi|fl|ff)\s+(?=\w)", r"\1", text)
+    text = re.sub(r"\bTh\s+(?=[A-Za-z])", "Th", text)
+    text = re.sub(
+        r"\b([A-Za-z0-9]+)\s+'\s+(s|t|re|ve|ll|d|m)\b",
+        r"\1'\2",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r"@\s+(?=[A-Za-z0-9])", "@", text)
+    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text
 
 
 def _build_pdf_pipeline_options(*, ocr_mode: bool = False) -> "PdfPipelineOptions":
@@ -311,35 +493,44 @@ def _export_docling_markdown(doc: object, source_path: Path) -> str:
     raise RuntimeError("Docling conversion produced no content")
 
 
-def _extract_with_docling(path: Path) -> str:
-    """Extract text/markdown using Docling."""
+@lru_cache(maxsize=None)
+def _get_docling_converter(kind: str):
+    """Return a process-cached Docling DocumentConverter.
+
+    Rebuilding DocumentConverter per file reloads the ~770-weight
+    layout/OCR models every single time — the dominant cost in a bulk
+    sync (turned a folder sync into an hours-long crawl). Build one per
+    config and reuse it for every file:
+      - "pdf"     : PDF layout pipeline, OCR off
+      - "pdf_ocr" : PDF pipeline with forced OCR
+      - "default" : non-PDF (docx/pptx/etc.)
+    """
     from docling.document_converter import DocumentConverter
 
-    if path.suffix.lower() == ".pdf":
-        from docling.datamodel.base_models import InputFormat
-        from docling.document_converter import PdfFormatOption
+    if kind == "default":
+        return DocumentConverter()
 
-        pipeline_opts = _build_pdf_pipeline_options(ocr_mode=False)
-        converter = DocumentConverter(
-            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
-        )
-    else:
-        converter = DocumentConverter()
+    from docling.datamodel.base_models import InputFormat
+    from docling.document_converter import PdfFormatOption
 
+    pipeline_opts = _build_pdf_pipeline_options(ocr_mode=(kind == "pdf_ocr"))
+    return DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
+    )
+
+
+def _extract_with_docling(path: Path) -> str:
+    """Extract text/markdown using Docling (cached converter)."""
+    kind = "pdf" if path.suffix.lower() == ".pdf" else "default"
+    converter = _get_docling_converter(kind)
     result = converter.convert(str(path))
     doc = getattr(result, "document", result)
     return _export_docling_markdown(doc, path)
 
 
 def _docling_ocr_convert(pdf_path: str) -> str:
-    """Run Docling OCR on a single PDF file, return markdown."""
-    from docling.datamodel.base_models import InputFormat
-    from docling.document_converter import DocumentConverter, PdfFormatOption
-
-    pipeline_opts = _build_pdf_pipeline_options(ocr_mode=True)
-    converter = DocumentConverter(
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
-    )
+    """Run Docling forced-OCR on a single PDF (cached converter)."""
+    converter = _get_docling_converter("pdf_ocr")
     result = converter.convert(pdf_path)
     doc = getattr(result, "document", result)
     return _export_docling_markdown(doc, Path(pdf_path))
@@ -567,14 +758,47 @@ def extract_text(file_path: str) -> dict:
         extractor_source = ""
 
         if ext == ".pdf":
-            docling_content, extraction_errors = _try_docling(path)
-            if docling_content is not None:
-                content = docling_content
-                extractor_name = "docling"
-                extractor_source = "docling"
+            # Fast path: if the PDF already has a rich embedded text
+            # layer, extract it directly and SKIP Docling. Docling can
+            # hang for many minutes (or forever) on perfectly
+            # text-extractable PDFs (observed on the OCR'd "Mobility in
+            # Context" chapters); a PyMuPDF text read is instant and
+            # reliable. Docling is reserved for genuinely scanned/
+            # image-only PDFs where there's no text layer to read.
+            fast_text, fast_chars, fast_pages = _pdf_text_layer(path)
+            if _has_rich_text_layer(fast_chars, fast_pages):
+                content = fast_text
+                extractor_name = "pymupdf-textlayer"
+                extractor_source = "textlayer"
+                if _check_pymupdf4llm():
+                    try:
+                        md = _extract_pdf_pymupdf4llm(path)
+                        if md.strip() and not _has_garbled_content(md):
+                            content = md
+                            extractor_name = "pymupdf4llm-textlayer"
+                    except Exception as exc:
+                        extraction_errors.append(f"pymupdf4llm: {exc}")
+                if _has_garbled_content(content):
+                    # Garbled embedded text (broken font maps) — let
+                    # Docling/OCR try instead.
+                    extraction_errors.append(
+                        "textlayer: garbled, falling back to docling"
+                    )
+                    docling_content, derrs = _try_docling(path)
+                    extraction_errors.extend(derrs)
+                    if docling_content is not None:
+                        content = docling_content
+                        extractor_name = "docling"
+                        extractor_source = "docling"
             else:
-                content, extractor_name = _extract_pdf(path)
-                extractor_source = "fallback"
+                docling_content, extraction_errors = _try_docling(path)
+                if docling_content is not None:
+                    content = docling_content
+                    extractor_name = "docling"
+                    extractor_source = "docling"
+                else:
+                    content, extractor_name = _extract_pdf(path)
+                    extractor_source = "fallback"
         elif ext == ".docx":
             docling_content, extraction_errors = _try_docling(path)
             if docling_content is not None:
@@ -603,6 +827,9 @@ def extract_text(file_path: str) -> dict:
                 "error": f"Unsupported file type: {ext}",
                 "metadata": metadata,
             }
+
+        if ext in (".pdf", ".docx", ".pptx"):
+            content = normalize_extracted_text(content)
 
         if extractor_name:
             metadata["extraction_method"] = extractor_name

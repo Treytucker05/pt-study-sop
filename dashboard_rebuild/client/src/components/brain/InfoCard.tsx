@@ -13,7 +13,7 @@ export function InfoCard({ label, value, subtext, className }: InfoCardProps) {
   return (
     <div
       className={cn(
-        "rounded-[1rem] border border-[rgba(255,120,148,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.28)_100%),linear-gradient(135deg,rgba(255,54,96,0.08),rgba(0,0,0,0.06)_48%,rgba(0,0,0,0.24)_100%)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_20px_rgba(0,0,0,0.18)]",
+        "rounded-[var(--ds-r-100)] border border-[rgba(255,118,144,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01)_18%,rgba(0,0,0,0.28)_100%),linear-gradient(135deg,rgba(255,52,92,0.08),rgba(0,0,0,0.06)_48%,rgba(0,0,0,0.24)_100%)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_20px_rgba(0,0,0,0.18)]",
         className,
       )}
     >

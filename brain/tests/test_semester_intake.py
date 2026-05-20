@@ -50,6 +50,22 @@ def _course_count() -> int:
         conn.close()
 
 
+def _insert_course(*, name: str, code: str | None = None) -> int:
+    conn = sqlite3.connect(config.DB_PATH)
+    try:
+        cur = conn.execute(
+            """
+            INSERT INTO courses (name, code, default_study_mode, created_at)
+            VALUES (?, ?, 'Core', '2026-05-13T00:00:00')
+            """,
+            (name, code),
+        )
+        conn.commit()
+        return int(cur.lastrowid)
+    finally:
+        conn.close()
+
+
 def test_semester_document_extractors_are_available() -> None:
     missing = [
         module_name
@@ -93,6 +109,82 @@ def test_semester_intake_preview_classifies_files_without_writing(client, tmp_pa
 
     assert payload["global_schedule_files"][0]["path"] == "00_Class schedules/Summer Schedule PT School.pdf"
     assert payload["ignored_files"][0]["path"] == "90_Misc/EXXAT Uploads/Resume_2026.pdf"
+
+
+def test_semester_intake_preview_matches_existing_course_by_file_code(
+    client, tmp_path
+):
+    existing_course_id = _insert_course(
+        name="Dx Mgmt Integumentary",
+        code="PHYT 6262",
+    )
+    root = tmp_path / "PT School"
+    _touch(root / "10_Dx Mgmt Integumtary" / "PHYT 6262 Dx Mgmt Integumentary Syllabus.docx")
+
+    response = client.post(
+        "/api/semester-intake/preview",
+        json={"folder_path": str(root)},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["counts"]["courses"] == 1
+    course = payload["courses"][0]
+    assert course["name"] == "Dx Mgmt Integumtary"
+    assert course["code"] == "PHYT 6262"
+    assert course["course_id"] == existing_course_id
+    assert course["readiness"]["course"] == "exists"
+    assert _course_count() == 1
+
+
+def test_semester_intake_preview_marks_existing_embedded_course_ready(
+    client, tmp_path
+):
+    existing_course_id = _insert_course(
+        name="Professionalism",
+        code="PHYT 6109",
+    )
+    conn = sqlite3.connect(config.DB_PATH)
+    try:
+        cur = conn.execute(
+            """
+            INSERT INTO rag_docs (
+                source_path, course_id, topic_tags, doc_type, content, checksum,
+                metadata_json, corpus, enabled, created_at
+            ) VALUES (?, ?, 'study-folder', 'pdf', 'content', 'checksum', '{}', 'materials', 1, '2026-05-13T00:00:00')
+            """,
+            (
+                "13_Professionalism/Week 1.pdf",
+                existing_course_id,
+            ),
+        )
+        conn.execute(
+            """
+            INSERT INTO rag_embeddings (
+                rag_doc_id, chunk_index, chunk_text, embedding_model, provider, chroma_id, created_at
+            ) VALUES (?, 0, 'content', 'gemini-embedding-2-preview', 'gemini', 'chunk-1', '2026-05-13T00:00:00')
+            """,
+            (int(cur.lastrowid),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    root = tmp_path / "PT School"
+    _touch(root / "13_Professionalism" / "PHYT 6109 Professionalism Syllabus.docx")
+
+    response = client.post(
+        "/api/semester-intake/preview",
+        json={"folder_path": str(root)},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    course = payload["courses"][0]
+    assert course["course_id"] == existing_course_id
+    assert course["readiness"]["materials"] == "found"
+    assert course["readiness"]["embeddings"] == "ready"
+    assert course["readiness"]["readyForTutor"] is True
 
 
 def test_semester_intake_apply_creates_courses_structured_data_and_sync_job(
@@ -183,7 +275,13 @@ def test_semester_intake_apply_creates_courses_structured_data_and_sync_job(
             "code": "PHYT 6262",
         }
         assert conn.execute("SELECT COUNT(*) FROM modules").fetchone()[0] == 1
-        assert conn.execute("SELECT COUNT(*) FROM learning_objectives").fetchone()[0] == 1
+        objective = conn.execute(
+            "SELECT title, group_name FROM learning_objectives"
+        ).fetchone()
+        assert tuple(objective) == (
+            "Explain wound healing phases",
+            "Week 1 Wound Healing",
+        )
         assert conn.execute("SELECT COUNT(*) FROM course_events").fetchone()[0] == 1
     finally:
         conn.close()
@@ -226,6 +324,7 @@ def test_semester_intake_apply_parses_setup_files_into_planning_tables(client, t
     assert payload["setupFilesParsed"] == 1
     assert payload["setupParseErrors"] == []
     assert payload["modulesCreated"] == 1
+    assert payload["objectivesCreated"] == 1
     assert payload["eventsCreated"] == 2
 
     conn = sqlite3.connect(config.DB_PATH)
@@ -234,6 +333,14 @@ def test_semester_intake_apply_parses_setup_files_into_planning_tables(client, t
             row[0] for row in conn.execute("SELECT name FROM modules ORDER BY order_index")
         ]
         assert module_names == ["Week 1: Wound Healing"]
+        objective = conn.execute(
+            "SELECT lo_code, title, group_name FROM learning_objectives"
+        ).fetchone()
+        assert tuple(objective) == (
+            "MOD-1",
+            "Study Week 1: Wound Healing",
+            "Week 1: Wound Healing",
+        )
         events = conn.execute(
             "SELECT type, title, date, due_date FROM course_events ORDER BY type"
         ).fetchall()

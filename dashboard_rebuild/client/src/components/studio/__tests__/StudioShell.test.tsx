@@ -926,6 +926,9 @@ describe("StudioShell", () => {
       expect(screen.getByText("2 Selected")).toBeInTheDocument();
     });
 
+    // Group/Ungroup/Tidy/etc. now live in the consolidated "Canvas"
+    // dropdown (single-row command-bar redesign); open it first.
+    fireEvent.click(screen.getByRole("button", { name: "Canvas actions" }));
     fireEvent.click(screen.getByRole("button", { name: "Group selected windows" }));
 
     const groupUpdater = setPanelLayout.mock.calls.at(-1)?.[0];
@@ -954,7 +957,10 @@ describe("StudioShell", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Ungroup selected windows" }));
+    fireEvent.click(screen.getByRole("button", { name: "Canvas actions" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ungroup selected windows" }),
+    );
 
     const ungroupUpdater = setGroupedLayout.mock.calls.at(-1)?.[0];
     expect(typeof ungroupUpdater).toBe("function");

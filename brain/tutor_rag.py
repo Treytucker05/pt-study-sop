@@ -724,6 +724,7 @@ def embed_rag_docs(
     course_id: Optional[int] = None,
     folder_path: Optional[str] = None,
     corpus: Optional[str] = None,
+    rag_doc_ids: Optional[Iterable[int]] = None,
     progress_callback: Optional[Callable[[int, int, str], None]] = None,
 ) -> dict:
     """
@@ -755,6 +756,21 @@ def embed_rag_docs(
     if folder_path:
         conditions.append("folder_path LIKE ?")
         params.append(f"%{folder_path}%")
+    if rag_doc_ids is not None:
+        scoped_ids = []
+        for raw_id in rag_doc_ids:
+            try:
+                doc_id = int(raw_id)
+            except (TypeError, ValueError):
+                continue
+            if doc_id > 0:
+                scoped_ids.append(doc_id)
+        if scoped_ids:
+            placeholders = ",".join("?" for _ in scoped_ids)
+            conditions.append(f"id IN ({placeholders})")
+            params.extend(scoped_ids)
+        else:
+            conditions.append("0 = 1")
 
     where = " AND ".join(conditions)
     cur.execute(

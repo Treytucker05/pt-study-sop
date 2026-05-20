@@ -21,9 +21,10 @@ export function buildStudioCanvasShape(
 
   return {
     id: getStudioCanvasShapeId(workspaceObject.id),
-    type: "note" as const,
-    x: 96 + column * 260,
-    y: 96 + row * 220,
+    type: "text" as const,
+    // Origin clears the fixed left workspace overlay.
+    x: 460 + column * 360,
+    y: 96 + row * 240,
     props: {
       richText: toRichText(
         workspaceObject.kind === "vault_path"
@@ -32,6 +33,12 @@ export function buildStudioCanvasShape(
             ? `${workspaceObject.title}\n${workspaceObject.provenance.sourceTitle}\n${workspaceObject.detail}`
             : `${workspaceObject.title}\n${workspaceObject.detail}`,
       ),
+      font: "mono" as const,
+      size: "s" as const,
+      color: "white" as const,
+      textAlign: "start" as const,
+      w: 320,
+      autoSize: false as const,
     },
   };
 }

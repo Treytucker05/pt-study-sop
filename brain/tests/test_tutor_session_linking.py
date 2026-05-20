@@ -435,12 +435,12 @@ def test_preflight_reports_focus_objective_blocker(client):
     assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
 
 
-def test_create_session_requires_preflight_for_objective_scoped_setup(client):
+def test_create_session_accepts_workspace_context_without_preflight(client):
     resp = client.post(
         "/api/tutor/session",
         json={
             "mode": "Core",
-            "topic": "Week 7 without preflight",
+            "topic": "Week 7 from Workspace Context",
             "focus_objective_id": "OBJ-6",
             "objective_scope": "single_focus",
             "learning_objectives": [
@@ -455,9 +455,63 @@ def test_create_session_requires_preflight_for_objective_scoped_setup(client):
         },
     )
 
-    assert resp.status_code == 400
+    assert resp.status_code == 201
     body = resp.get_json()
-    assert body["code"] == "PREFLIGHT_REQUIRED"
+    assert body["focus_objective_id"] == "OBJ-6"
+    assert body["objective_scope"] == "single_focus"
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (body["session_id"],),
+    ).fetchone()
+    conn.close()
+    saved_filter = json.loads(row["content_filter_json"] or "{}")
+    assert saved_filter["material_ids"] == [11, 12]
+
+
+def test_create_session_allows_material_backed_unmapped_workspace_context(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (17, "Professionalism", "PHYT 6109", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "course_id": 17,
+            "mode": "Core",
+            "topic": "Week 0: Getting Started",
+            "module_name": "Week 0: Getting Started",
+            "objective_scope": "module_all",
+            "learning_objectives": [
+                {"lo_code": "MOD-1", "title": "Study Week 0: Getting Started"}
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+
+    assert resp.status_code == 201
+    body = resp.get_json()
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (body["session_id"],),
+    ).fetchone()
+    conn.close()
+    saved_filter = json.loads(row["content_filter_json"] or "{}")
+    assert saved_filter["material_ids"] == [11, 12]
+    assert "Unmapped vault course" in saved_filter["map_of_contents_warning"]
 
 
 def test_create_session_rejects_non_integer_course_id(client):
@@ -600,6 +654,62 @@ def test_preflight_missing_mapped_objectives_returns_blocker_instead_of_500(
         blocker["code"] == "APPROVED_OBJECTIVES_REQUIRED"
         for blocker in body["blockers"]
     )
+
+
+def test_preflight_allows_material_backed_session_when_vault_course_unmapped(
+    client,
+    monkeypatch,
+):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (12, "Professionalism", "PHYT 6109", "#ff0066"),
+    )
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(
+        _api_tutor_vault_mod,
+        "_resolve_learning_objectives_for_scope",
+        lambda **_kwargs: [
+            {
+                "objective_id": "MOD-1",
+                "title": "Study Week 1.",
+                "status": "active",
+                "group": "Week 1",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        _api_tutor_mod,
+        "_ensure_moc_context",
+        lambda **_kwargs: (
+            None,
+            "Unmapped vault course 'Professionalism' for module 'Week 1'.",
+        ),
+    )
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 12,
+            "study_unit": "Week 1",
+            "objective_scope": "module_all",
+            "content_filter": {
+                "material_ids": [561],
+            },
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is True
+    assert body["blockers"] == []
+    assert body["map_of_contents"] is None
+    assert body["resolved_learning_objectives"][0]["objective_id"] == "MOD-1"
 
 
 def test_template_chains_endpoint_exposes_certification_metadata(client):

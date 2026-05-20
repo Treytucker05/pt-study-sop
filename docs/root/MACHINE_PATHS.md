@@ -13,7 +13,7 @@ This is the checklist for moving PT Study OS to a new computer. GitHub syncs cod
 | `OBSIDIAN_VAULT_FS_PATH` | Filesystem vault root for direct reads/writes | `C:\Users\treyt\Desktop\Treys School` | `/Users/fst/Desktop/Treys School/Treys School` |
 | `PT_OBSIDIAN_VAULT_PATH` | Alias for the same vault root | same as above | same as above |
 | `OBSIDIAN_VAULT_NAME` | Vault name for `obsidian://` links | `Treys School` | `Treys School` or the actual Mac vault name |
-| `PT_STUDY_RAG_DIR` | Source material folder scanned from Library | `C:\Users\treyt\OneDrive\Desktop\PT School` | `/Users/fst/Desktop/PT School` |
+| `PT_STUDY_RAG_DIR` | Source material folder scanned from Library | `C:\Users\treyt\OneDrive\Desktop\PT School` | `/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School` |
 | `TUTOR_MATERIALS_DIR` / `PT_SCHOOL_MATERIALS_DIR` | Optional aliases for material sync flows | same PT School folder | same PT School folder |
 | `PT_BRAIN_PORT` | Local dashboard port | `5000` | `5127` |
 | Google OAuth redirect | Calendar callback URI must match the local port | `http://localhost:5000/api/gcal/oauth/callback` | `http://localhost:5127/api/gcal/oauth/callback` |
@@ -50,10 +50,10 @@ On macOS, those paths do not exist unless the source files were copied and the m
 
 For testing old materials on macOS:
 
-1. Copy the Windows `PT School` source folder to `/Users/fst/Desktop/PT School`.
-2. Set `PT_STUDY_RAG_DIR=/Users/fst/Desktop/PT School`.
-3. Set `TUTOR_MATERIALS_DIR=/Users/fst/Desktop/PT School`.
-4. Set `PT_SCHOOL_MATERIALS_DIR=/Users/fst/Desktop/PT School`.
+1. Use the OneDrive-backed `PT School` source folder at `/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School`.
+2. Set `PT_STUDY_RAG_DIR=/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School`.
+3. Set `TUTOR_MATERIALS_DIR=/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School`.
+4. Set `PT_SCHOOL_MATERIALS_DIR=/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School`.
 5. Copy `brain/data/uploads/` only if old uploaded-file previews matter.
 6. Start the dashboard and re-scan or re-import selected current materials from `/library`.
 
@@ -84,7 +84,7 @@ Verified Mac Obsidian vault path:
 Required Mac material root for old/current PT School source files:
 
 ```text
-/Users/fst/Desktop/PT School
+/Users/fst/Library/CloudStorage/OneDrive-Personal/Desktop/PT School
 ```
 
 The Mac dashboard default is:

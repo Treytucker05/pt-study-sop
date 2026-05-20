@@ -254,7 +254,7 @@ export function StudioDocumentDock({
 
   return (
     <div className="space-y-4 font-mono text-sm text-foreground/78">
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         {documentTabs.length > 0 ? (
           <div className="mb-3 flex flex-wrap gap-2">
             {documentTabs.map((tab) => {
@@ -302,7 +302,7 @@ export function StudioDocumentDock({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           Current run
         </div>
@@ -314,14 +314,14 @@ export function StudioDocumentDock({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           Source viewer
         </div>
         <div className="mt-1 text-sm text-foreground/72">
           Open a source here, then clip the passage you want to move into the workspace.
         </div>
-        <div className="mt-3 min-h-[220px] overflow-hidden rounded-[0.85rem] border border-primary/12 bg-black/20">
+        <div className="mt-3 min-h-[220px] overflow-hidden rounded-[var(--ds-r-085)] border border-primary/12 bg-black/20">
           {activeMaterial ? (
             activeMaterialLoading ? (
               <div className="flex min-h-[220px] items-center justify-center font-mono text-sm text-foreground/60">
@@ -370,7 +370,7 @@ export function StudioDocumentDock({
         </div>
       </div>
 
-      <div className="rounded-[0.85rem] border border-primary/15 bg-black/15 p-3">
+      <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
           Selected passage
         </div>
@@ -381,7 +381,7 @@ export function StudioDocumentDock({
           Paste an image with Ctrl+V.
         </div>
         {clipImage ? (
-          <div className="mt-3 rounded-[0.85rem] border border-primary/16 bg-black/25 p-3">
+          <div className="mt-3 rounded-[var(--ds-r-085)] border border-primary/16 bg-black/25 p-3">
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary/72">
               Pasted image preview
             </div>
@@ -389,7 +389,7 @@ export function StudioDocumentDock({
               src={clipImage.url}
               alt={`Pasted clipboard clip for ${activeDocumentTitle}`}
               data-testid="document-dock-clip-image-preview"
-              className="mt-3 max-h-48 w-full rounded-[0.75rem] border border-primary/12 object-contain"
+              className="mt-3 max-h-48 w-full rounded-[var(--ds-r-075)] border border-primary/12 object-contain"
             />
             <div className="mt-3 flex items-center justify-between gap-3 text-xs text-foreground/62">
               <span>{clipStatus || "Clipboard image ready to clip."}</span>
@@ -419,7 +419,7 @@ export function StudioDocumentDock({
           }}
           onPaste={handlePaste}
           rows={5}
-          className="mt-3 min-h-[120px] rounded-[0.85rem] border-primary/18 bg-black/20 font-mono text-sm text-foreground"
+          className="mt-3 min-h-[120px] rounded-[var(--ds-r-085)] border-primary/18 bg-black/20 font-mono text-sm text-foreground"
           placeholder="Paste or refine the excerpt you want to clip into the workspace."
         />
         <div className="mt-3 flex items-center justify-between gap-3">
@@ -432,7 +432,7 @@ export function StudioDocumentDock({
             type="button"
             onClick={handleClipExcerpt}
             disabled={!canClipExcerpt}
-            className="rounded-[0.7rem] border border-primary/20 bg-primary/16 px-3 py-2 font-mono text-xs uppercase tracking-[0.12em] text-primary hover:bg-primary/24 disabled:opacity-50"
+            className="rounded-[var(--ds-r-070)] border border-primary/20 bg-primary/16 px-3 py-2 font-mono text-xs uppercase tracking-[0.12em] text-primary hover:bg-primary/24 disabled:opacity-50"
           >
             Clip excerpt to workspace
           </Button>
@@ -440,7 +440,7 @@ export function StudioDocumentDock({
       </div>
 
       {selectedPaths.length > 0 ? (
-        <div className="space-y-2 rounded-[0.85rem] border border-primary/10 bg-black/10 p-3 text-foreground/72">
+        <div className="space-y-2 rounded-[var(--ds-r-085)] border border-primary/10 bg-black/10 p-3 text-foreground/72">
           {selectedPaths.slice(0, 3).map((path) => (
             <div key={path} className="break-all">
               {path}

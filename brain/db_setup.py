@@ -3046,6 +3046,7 @@ def init_database():
         "artifacts_json",
         "response_id",
         "model_id",
+        "interaction_mode",
     ]:
         if col_name not in tt_cols:
             try:

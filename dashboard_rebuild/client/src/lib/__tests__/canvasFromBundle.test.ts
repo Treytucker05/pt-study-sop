@@ -27,7 +27,7 @@ describe("buildSessionSeedShapes", () => {
     expect(buildSessionSeedShapes(bundleWith({}))).toEqual([]);
   });
 
-  it("creates one note shape per LO up to MAX_FRAMES (12)", () => {
+  it("creates one text shape per LO up to MAX_FRAMES (12)", () => {
     const many = Array.from({ length: 20 }, (_, i) => ({
       loCode: `L-${i}`,
       title: `Objective ${i}`,
@@ -36,7 +36,8 @@ describe("buildSessionSeedShapes", () => {
     }));
     const shapes = buildSessionSeedShapes(bundleWith({ learningObjectives: many }));
     expect(shapes).toHaveLength(12);
-    expect(shapes.every((s) => s.type === "note")).toBe(true);
+    expect(shapes.every((s) => s.type === "text")).toBe(true);
+    expect(shapes.every((s) => s.props.font === "mono")).toBe(true);
     expect(shapes.every((s) => s.meta.source === "session-seed")).toBe(true);
   });
 
@@ -49,10 +50,10 @@ describe("buildSessionSeedShapes", () => {
     }));
     const shapes = buildSessionSeedShapes(bundleWith({ learningObjectives: los }));
     expect(shapes.map((s) => [s.x, s.y])).toEqual([
-      [96, 96],
-      [96 + 360, 96],
-      [96 + 720, 96],
-      [96, 96 + 280],
+      [460, 96],
+      [460 + 360, 96],
+      [460 + 720, 96],
+      [460, 96 + 280],
     ]);
   });
 

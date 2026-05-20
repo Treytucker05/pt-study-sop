@@ -1,6 +1,8 @@
 import { CoreWorkspaceFrame } from "@/components/CoreWorkspaceFrame";
 import { PageScaffold } from "@/components/PageScaffold";
+import { useCanvasLocked } from "@/lib/canvasLock";
 import { TutorShell } from "@/components/TutorShell";
+import { TutorTeachLegList } from "@/components/tutor-shell/TutorTeachLegList";
 import { TutorTopBar } from "@/components/TutorTopBar";
 import { HudButton } from "@/components/ui/HudButton";
 import { buildStudioShellPresetLayout } from "@/components/studio/StudioShell";
@@ -37,6 +39,7 @@ import {
   writeTutorSelectedMaterialIds,
   writeTutorStoredStartState,
   writeTutorVaultFolder,
+  type TutorCourseSetupPrimingHandoff,
 } from "@/lib/tutorClientState";
 import { resolveResumableTutorHubCandidate } from "@/lib/tutorResumeCandidate";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
@@ -60,7 +63,9 @@ function toJsonRecords<T extends object>(items: T[]): Record<string, unknown>[] 
 
 function useTutorPageController() {
   const queryClient = useQueryClient();
+  const canvasLocked = useCanvasLocked();
   const initialRouteQuery = useMemo(() => readTutorShellQuery(), []);
+  const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
   const lastPersistedShellKeyRef = useRef("");
   const pendingPersistShellKeyRef = useRef<string | null>(null);
   const pendingPersistShellPayloadRef =
@@ -82,12 +87,14 @@ function useTutorPageController() {
     useState<number | null>(null);
   const [entrySessionName, setEntrySessionName] = useState("");
   const [entryMaterialSelectionTouched, setEntryMaterialSelectionTouched] =
-    useState(false);
+    useState(() => pendingLaunchHandoff.fromLibraryHandoff);
+  const [courseSetupPrimingHandoff, setCourseSetupPrimingHandoff] =
+    useState<TutorCourseSetupPrimingHandoff | null>(null);
   const [entryCardFlashActive, setEntryCardFlashActive] = useState(false);
   const [entryCardStatusMessage, setEntryCardStatusMessage] = useState<string | null>(null);
+  const setupPrimingStartedRef = useRef<string | null>(null);
 
   // ─── Shell state ───
-  const pendingLaunchHandoff = useMemo(() => peekTutorLaunchHandoff(), []);
   const storedActiveSessionId = useMemo(() => readTutorActiveSessionId(), []);
   const studioRun = useStudioRun({
     initialRouteQuery,
@@ -620,10 +627,11 @@ function useTutorPageController() {
     [hub],
   );
 
-  const handleTutorSessionAction = useCallback(async () => {
+  const handleNewSessionHero = useCallback(async () => {
     if (sessionActionPending) return;
-    const activeWorkflowId = workflow.activeWorkflowId;
-    const hasActiveWork = Boolean(liveTutorSessionId || activeWorkflowId);
+    const hasActiveWork = Boolean(
+      liveTutorSessionId || workflow.activeWorkflowId,
+    );
     if (showSetup && panelLayout.length === 0 && !hasActiveWork) {
       if (entryCardFlashTimeoutRef.current) {
         clearTimeout(entryCardFlashTimeoutRef.current);
@@ -634,42 +642,6 @@ function useTutorPageController() {
         setEntryCardFlashActive(false);
         entryCardFlashTimeoutRef.current = null;
       }, 1000);
-      return;
-    }
-    // Audit 2026-04-22: a "session" in the user's mental model is the whole
-    // study workflow (Start Priming → Priming → Workspace/Packets → Tutor →
-    // Polish), not just the Tutor chat. The hero button must treat any
-    // active workflow OR a live tutor session as "in a session" so the
-    // label + confirm gate fire correctly. Live tutor sessions still go
-    // through endSessionById so server-side stage timers and vault save
-    // run; workflow-only cases (e.g. mid-Priming) just reset the
-    // workspace locally — the workflow persists on the server and shows
-    // up under PREVIOUS SESSIONS for resume or bulk-delete.
-    if (hasActiveWork) {
-      const confirmMessage = liveTutorSessionId
-        ? "End the current Tutor session? Your workflow progress stays saved and you can resume it from Previous Sessions."
-        : "End the current study session? Your Priming and workspace progress stay saved and you can resume this workflow from Previous Sessions.";
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-      setSessionActionPending(true);
-      suppressProjectShellRestoreRef.current = true;
-      resumedFromProjectShellRef.current = true;
-      try {
-        if (liveTutorSessionId) {
-          await session.endSessionById(liveTutorSessionId);
-        } else {
-          resetTutorWorkspaceHome();
-        }
-      } catch (error) {
-        toast.error(
-          `Failed to end session: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-        );
-      } finally {
-        setSessionActionPending(false);
-      }
       return;
     }
     setSessionActionPending(true);
@@ -691,9 +663,117 @@ function useTutorPageController() {
     liveTutorSessionId,
     panelLayout.length,
     resetTutorWorkspaceHome,
-    session,
     sessionActionPending,
     showSetup,
+    workflow.activeWorkflowId,
+  ]);
+
+  const handleEndTeach = useCallback(async () => {
+    if (sessionActionPending || !liveTutorSessionId) return;
+    if (
+      !window.confirm(
+        "End teach? This closes the current teach leg only. Your study run stays open for another teach leg or polish.",
+      )
+    ) {
+      return;
+    }
+    setSessionActionPending(true);
+    suppressProjectShellRestoreRef.current = true;
+    resumedFromProjectShellRef.current = true;
+    try {
+      await session.endSessionById(liveTutorSessionId, {
+        advanceWorkflow: false,
+      });
+    } catch (error) {
+      toast.error(
+        `Failed to end teach: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSessionActionPending(false);
+    }
+  }, [
+    liveTutorSessionId,
+    session,
+    sessionActionPending,
+  ]);
+
+  const handleNewTeach = useCallback(async () => {
+    if (sessionActionPending) return;
+    if (liveTutorSessionId) {
+      if (
+        !window.confirm(
+          "Start a new teach leg? The current teach leg will end first; your study run stays open.",
+        )
+      ) {
+        return;
+      }
+      setSessionActionPending(true);
+      try {
+        await session.endSessionById(liveTutorSessionId, {
+          advanceWorkflow: false,
+        });
+      } catch (error) {
+        toast.error(
+          `Failed to end current teach leg: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
+        setSessionActionPending(false);
+        return;
+      }
+      setSessionActionPending(false);
+    }
+    setShowSetup(false);
+    setPanelLayout(buildStudioShellPresetLayout("study"));
+    toast.success("Choose materials and START TUTOR for the new teach leg.");
+  }, [
+    liveTutorSessionId,
+    session,
+    sessionActionPending,
+    setPanelLayout,
+    setShowSetup,
+  ]);
+
+  const handleFinishStudyRun = useCallback(async () => {
+    if (sessionActionPending) return;
+    const activeWorkflowId = workflow.activeWorkflowId;
+    if (!activeWorkflowId) return;
+    if (
+      !window.confirm(
+        liveTutorSessionId
+          ? "Finish study run? The active teach leg will stay in history; you will need a new study run to teach again."
+          : "Finish study run? Priming and workspace progress stay saved under Previous Sessions, but this run will close.",
+      )
+    ) {
+      return;
+    }
+    setSessionActionPending(true);
+    suppressProjectShellRestoreRef.current = true;
+    resumedFromProjectShellRef.current = true;
+    try {
+      await api.tutor.finishStudyRun(activeWorkflowId);
+      await queryClient.invalidateQueries({ queryKey: ["tutor-workflows"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["tutor-workflow-detail", activeWorkflowId],
+      });
+      resetTutorWorkspaceHome();
+      toast.success("Study run finished.");
+    } catch (error) {
+      toast.error(
+        `Failed to finish study run: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSessionActionPending(false);
+    }
+  }, [
+    liveTutorSessionId,
+    queryClient,
+    resetTutorWorkspaceHome,
+    sessionActionPending,
     workflow.activeWorkflowId,
   ]);
 
@@ -841,11 +921,25 @@ function useTutorPageController() {
   // ─── Restore shell state on mount ───
   const restoreTutorShellState = useCallback(async () => {
     let restoredCourseId = false;
-    const { fromLibraryHandoff, brainLaunchContext: nextBrainLaunchContext } =
-      consumeTutorLaunchHandoff();
+    const {
+      fromLibraryHandoff,
+      brainLaunchContext: nextBrainLaunchContext,
+      courseSetupPrimingHandoff: nextCourseSetupPrimingHandoff,
+    } = consumeTutorLaunchHandoff();
     const fromBrainHandoff = Boolean(nextBrainLaunchContext);
     if (nextBrainLaunchContext) {
       setBrainLaunchContext(nextBrainLaunchContext);
+    }
+    if (nextCourseSetupPrimingHandoff) {
+      setCourseSetupPrimingHandoff(nextCourseSetupPrimingHandoff);
+      setEntryMaterialSelectionTouched(true);
+      setShowSetup(false);
+      suppressProjectShellRestoreRef.current = true;
+      hub.setSelectedMaterials([nextCourseSetupPrimingHandoff.materialId]);
+      hub.setTopic(`Course setup: ${nextCourseSetupPrimingHandoff.materialTitle}`);
+      if (typeof nextCourseSetupPrimingHandoff.courseId === "number") {
+        hub.setCourseId(nextCourseSetupPrimingHandoff.courseId);
+      }
     }
 
     const resumeCandidateSessionId =
@@ -880,6 +974,9 @@ function useTutorPageController() {
     const canonicalMaterialSelection = readTutorSelectedMaterialIds();
     if (canonicalMaterialSelection.length > 0) {
       hub.setSelectedMaterials(canonicalMaterialSelection);
+      if (fromLibraryHandoff) {
+        setEntryMaterialSelectionTouched(true);
+      }
     }
     if (!fromLibraryHandoff && !fromBrainHandoff) {
       restoredCourseId = applyStoredStartState(
@@ -900,6 +997,46 @@ function useTutorPageController() {
       }
     }
   }, [applyStoredStartState, hub, initialRouteQuery, session]);
+
+  useEffect(() => {
+    if (!courseSetupPrimingHandoff || !hasRestored) return;
+    const courseId = courseSetupPrimingHandoff.courseId ?? hub.courseId;
+    if (typeof courseId !== "number") return;
+    const key = `${courseId}:${courseSetupPrimingHandoff.materialId}`;
+    if (setupPrimingStartedRef.current === key) return;
+    setupPrimingStartedRef.current = key;
+    suppressProjectShellRestoreRef.current = true;
+    setShowSetup(false);
+    hub.setCourseId(courseId);
+    hub.setSelectedMaterials([courseSetupPrimingHandoff.materialId]);
+    hub.setTopic(`Course setup: ${courseSetupPrimingHandoff.materialTitle}`);
+
+    void (async () => {
+      const workflowId = await workflow.createWorkflowAndOpenPriming({
+        courseId,
+        topic: `Course setup: ${courseSetupPrimingHandoff.materialTitle}`,
+        selectedMaterials: [courseSetupPrimingHandoff.materialId],
+        selectedPaths: [],
+        selectedObjectiveGroup: "",
+        selectedObjectiveId: "",
+        objectiveScope: "module_all",
+      });
+      if (workflowId) {
+        setPanelLayout(buildStudioShellPresetLayout("priming"));
+        setStartPrimingViewportFocusRequestKey((current) =>
+          typeof current === "number" ? current + 1 : 1,
+        );
+      }
+      setCourseSetupPrimingHandoff(null);
+    })();
+  }, [
+    courseSetupPrimingHandoff,
+    hasRestored,
+    hub,
+    setPanelLayout,
+    setShowSetup,
+    workflow,
+  ]);
 
   // ─── Effects ───
   useEffect(() => {
@@ -1142,7 +1279,7 @@ function useTutorPageController() {
     session.advanceBlock,
   ]);
   const tutorHeroActionClassName =
-    "tutor-hero-action inline-flex min-h-[56px] min-w-[12rem] w-auto shrink-0 items-center justify-center gap-2.5 rounded-none px-6 py-3.5 font-arcade text-[0.92rem] leading-none tracking-[0.16em]";
+    "tutor-hero-action inline-flex min-h-[44px] min-w-[9.5rem] w-auto shrink-0 items-center justify-center gap-2 rounded-none px-3.5 py-2.5 font-arcade text-[0.72rem] leading-none tracking-[0.12em] sm:min-h-[50px] sm:min-w-[10.5rem] sm:px-5 sm:py-3 sm:text-[0.82rem] sm:tracking-[0.14em] xl:min-h-[56px] xl:min-w-[12rem] xl:px-6 xl:py-3.5 xl:text-[0.92rem] xl:tracking-[0.16em]";
 
   // ─── Render ───
   return (
@@ -1150,33 +1287,103 @@ function useTutorPageController() {
       eyebrow="Live Study Core"
       title="Tutor"
       subtitle="Run your study plan from Workspace Home through Priming, then move into Tutor and Final Sync without losing context."
-      className="h-full min-h-0"
+      className={`h-full min-h-0${canvasLocked ? " page-shell--app" : ""}`}
       contentClassName="gap-6"
-      heroClassName="min-h-[243px]"
+      heroClassName="tutor-page-hero"
       stats={tutorHeroStats}
+      heroFooter={
+        workflow.activeWorkflowId ? (
+          <TutorTeachLegList
+            workflowId={workflow.activeWorkflowId}
+            activeSessionId={liveTutorSessionId}
+            onSelectLeg={(sessionId) => {
+              void session.resumeSession(sessionId);
+            }}
+          />
+        ) : null
+      }
       actions={
         <>
-          <HudButton
-            variant="primary"
-            className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
-            disabled={sessionActionPending}
-            title={
-              (liveTutorSessionId || workflow.activeWorkflowId) &&
-              !sessionActionPending
-                ? "End the current study session and save progress to your vault"
-                : "Open the entry card to set up and start a new study session"
-            }
-            onClick={() => {
-              void handleTutorSessionAction();
-            }}
-          >
-            <span className="tutor-hero-action__label">
-              {(liveTutorSessionId || workflow.activeWorkflowId) &&
-              !sessionActionPending
-                ? "END SESSION"
-                : "NEW SESSION"}
-            </span>
-          </HudButton>
+          {liveTutorSessionId ? (
+            <>
+              <HudButton
+                variant="outline"
+                className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-end-teach"
+                title="Close the current teach leg only; study run stays open"
+                onClick={() => {
+                  void handleEndTeach();
+                }}
+              >
+                <span className="tutor-hero-action__label">END TEACH</span>
+              </HudButton>
+              <HudButton
+                variant="outline"
+                className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-new-teach"
+                title="End the current leg (if needed) and start another teach leg in this study run"
+                onClick={() => {
+                  void handleNewTeach();
+                }}
+              >
+                <span className="tutor-hero-action__label">NEW TEACH</span>
+              </HudButton>
+              <HudButton
+                variant="primary"
+                className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-finish-study-run"
+                title="Close the whole study run (workflow)"
+                onClick={() => {
+                  void handleFinishStudyRun();
+                }}
+              >
+                <span className="tutor-hero-action__label">FINISH STUDY RUN</span>
+              </HudButton>
+            </>
+          ) : workflow.activeWorkflowId ? (
+            <>
+              <HudButton
+                variant="primary"
+                className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-finish-study-run"
+                title="Close the whole study run (workflow)"
+                onClick={() => {
+                  void handleFinishStudyRun();
+                }}
+              >
+                <span className="tutor-hero-action__label">FINISH STUDY RUN</span>
+              </HudButton>
+              <HudButton
+                variant="outline"
+                className={`${tutorHeroActionClassName} tutor-hero-action--outline`}
+                disabled={sessionActionPending}
+                data-testid="tutor-hero-new-session"
+                title="Open the entry card to set up and start a new study session"
+                onClick={() => {
+                  void handleNewSessionHero();
+                }}
+              >
+                <span className="tutor-hero-action__label">NEW SESSION</span>
+              </HudButton>
+            </>
+          ) : (
+            <HudButton
+              variant="primary"
+              className={`${tutorHeroActionClassName} tutor-hero-action--primary`}
+              disabled={sessionActionPending}
+              data-testid="tutor-hero-new-session"
+              title="Open the entry card to set up and start a new study session"
+              onClick={() => {
+                void handleNewSessionHero();
+              }}
+            >
+              <span className="tutor-hero-action__label">NEW SESSION</span>
+            </HudButton>
+          )}
           {resumeCandidate ? (
             <HudButton
               variant="outline"
@@ -1224,6 +1431,9 @@ function useTutorPageController() {
         mainClassName="tutor-shell-frame__main"
         contentClassName="relative min-h-0"
         topBar={tutorTopBar}
+        topBarVariant="integrated"
+        topBarClassName="py-1"
+        topBarSurfaceClassName="min-h-0"
       >
         <TutorShell
         activeSessionId={liveTutorSessionId}

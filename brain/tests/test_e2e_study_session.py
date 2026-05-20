@@ -331,3 +331,56 @@ class TestFullStudySession:
         conn.close()
         # Should have at least 2 rows (Hip and Knee topics)
         assert len(rows) >= 2
+
+
+class TestResumeSession:
+    """An ended session can be resumed from PREVIOUS SESSIONS.
+
+    Turn submission requires status == 'active', so a completed session is
+    view-only until reactivated. POST /session/<id>/resume flips it back to
+    'active' and clears ended_at; it is idempotent.
+    """
+
+    def test_resume_reactivates_completed_session(self, client):
+        chain_id = _get_chain_id(client)
+        create = client.post("/api/tutor/session", json={
+            "mode": "Core",
+            "topic": "Resume Me",
+            "method_chain_id": chain_id,
+            "content_filter": {
+                "stage": "pre-class",
+                "energy": "medium",
+                "class_type": "lecture",
+            },
+        })
+        assert create.status_code == 201, create.get_json()
+        session_id = create.get_json()["session_id"]
+
+        end = client.post(f"/api/tutor/session/{session_id}/end")
+        assert end.status_code == 200
+        assert end.get_json()["status"] == "completed"
+
+        resume = client.post(f"/api/tutor/session/{session_id}/resume")
+        assert resume.status_code == 200, resume.get_json()
+        body = resume.get_json()
+        assert body["status"] == "active"
+        assert body["already_active"] is False
+        assert body["prior_status"] == "completed"
+
+        # The session is now active and ended_at was cleared on restore.
+        got = client.get(f"/api/tutor/session/{session_id}")
+        assert got.status_code == 200
+        restored = got.get_json()
+        assert restored["status"] == "active"
+        assert not restored.get("ended_at")
+
+        # Idempotent: resuming an already-active session is a no-op success.
+        again = client.post(f"/api/tutor/session/{session_id}/resume")
+        assert again.status_code == 200
+        assert again.get_json()["already_active"] is True
+
+        client.post(f"/api/tutor/session/{session_id}/end")
+
+    def test_resume_unknown_session_404(self, client):
+        resp = client.post("/api/tutor/session/tutor-does-not-exist/resume")
+        assert resp.status_code == 404

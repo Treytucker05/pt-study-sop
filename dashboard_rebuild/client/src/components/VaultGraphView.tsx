@@ -345,7 +345,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
               onNodeClick={handleNodeClick}
               onNodeHover={(node: GraphNode | null) => patchGraphState({ hoveredNode: node })}
               onZoom={({ k }: { k: number }) => patchGraphState({ zoomLevel: k })}
-              linkColor={() => "rgba(255, 80, 80, 0.35)"}
+              linkColor={() => "rgba(255,74,74,0.35)"}
               linkWidth={1.5}
               backgroundColor="transparent"
               cooldownTicks={100}

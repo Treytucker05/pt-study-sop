@@ -560,7 +560,7 @@ describe("TutorWorkflowPrimingPanel", () => {
     expect(screen.getAllByText("Trey's Favorite: Start Here").length).toBeGreaterThan(0);
   });
 
-  it("runs a selected method, renders formatted objectives, and sends the result to Prime Packet and Workspace", async () => {
+  it("runs a selected method, renders formatted objectives, and auto-captures the result as a Workspace card", async () => {
     const onRunAssistForSelected = vi.fn();
     const onPromoteResultToPrimePacket = vi.fn();
     const onSendResultToWorkspace = vi.fn();
@@ -742,13 +742,18 @@ describe("TutorWorkflowPrimingPanel", () => {
       }),
     );
 
-    // Text-only result blocks (objectives) don't expose a Send to Workspace
-    // button — Workspace canvas is reserved for visual constructs. The
-    // onSendResultToWorkspace callback should remain unfired for this flow.
-    expect(
-      screen.queryByRole("button", { name: /send to workspace/i }),
-    ).not.toBeInTheDocument();
-    expect(onSendResultToWorkspace).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(onSendResultToWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "text_note",
+          title: expect.stringContaining("Learning Objectives"),
+          badge: "OBJECTIVES",
+          provenance: expect.objectContaining({
+            sourceType: "priming_result",
+          }),
+        }),
+      ),
+    );
   });
 
   it("enables Priming chat after RUN, sends a follow-up, and applies revised results", async () => {

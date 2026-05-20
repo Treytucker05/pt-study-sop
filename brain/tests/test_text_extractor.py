@@ -113,6 +113,41 @@ def test_extract_text_uses_resolved_filesystem_path(
     assert result["metadata"]["file_name"] == "resolved.md"
 
 
+def test_normalize_extracted_text_recovers_private_use_th_glyphs() -> None:
+    content = (
+        "I will share that story. \ue062 ere are only 5 stops. \ue062 ank you!\n"
+        "Physical \ue0bb erapy. \ue0bb e author declares no conflicts.\n"
+        "Force and Torques are Balanced \uf0e0 Muscle activities"
+    )
+
+    result = text_extractor.normalize_extracted_text(content)
+
+    assert "\ue062" not in result
+    assert "\ue0bb" not in result
+    assert "There are only 5 stops" in result
+    assert "Thank you!" in result
+    assert "Physical Therapy" in result
+    assert "The author declares no conflicts" in result
+    assert "Balanced -> Muscle activities" in result
+
+
+def test_normalize_extracted_text_repairs_split_ligatures_and_apostrophes() -> None:
+    content = "e ff orts, con fi dence, ef fi cient, isn ' t, journal ' s"
+
+    result = text_extractor.normalize_extracted_text(content)
+
+    assert result == "efforts, confidence, efficient, isn't, journal's"
+
+
+def test_normalize_extracted_text_does_not_collapse_quoted_phrases() -> None:
+    content = "she asked: ' Why is this important? ' and ' How did you get here? '"
+
+    result = text_extractor.normalize_extracted_text(content)
+
+    assert "' and '" in result
+    assert "and'How" not in result
+
+
 # ---------------------------------------------------------------------------
 # Garbled content detection
 # ---------------------------------------------------------------------------

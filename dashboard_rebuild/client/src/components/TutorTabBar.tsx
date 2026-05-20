@@ -100,7 +100,7 @@ export function TutorTabBar({
             {artifacts.length > 0 ? (
               <Badge
                 variant="outline"
-                className="ml-1 rounded-[0.2rem] border-primary/25 px-1.5 py-0.5 font-mono text-ui-2xs"
+                className="ml-1 rounded-[var(--ds-r-020)] border-primary/25 px-1.5 py-0.5 font-mono text-ui-2xs"
               >
                 {artifacts.length}
               </Badge>

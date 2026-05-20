@@ -28,7 +28,10 @@ if [ -n "${OBSIDIAN_VAULT_FS_PATH:-}" ] && [ -z "${PT_OBSIDIAN_VAULT_PATH:-}" ];
 fi
 
 if [ -z "${PT_STUDY_RAG_DIR:-}" ]; then
-  if [ -d "$HOME/Desktop/PT School" ]; then
+  ONEDRIVE_PT_SCHOOL="$HOME/Library/CloudStorage/OneDrive-Personal/Desktop/PT School"
+  if [ -d "$ONEDRIVE_PT_SCHOOL" ]; then
+    export PT_STUDY_RAG_DIR="$ONEDRIVE_PT_SCHOOL"
+  elif [ -d "$HOME/Desktop/PT School" ]; then
     export PT_STUDY_RAG_DIR="$HOME/Desktop/PT School"
   elif [ -d "$ROOT_DIR/PT School" ]; then
     export PT_STUDY_RAG_DIR="$ROOT_DIR/PT School"
