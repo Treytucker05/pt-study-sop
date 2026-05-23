@@ -2,6 +2,22 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-05-20 - Tutor material viewer + entry materials + path-stale diagnosis
+
+**Symptoms:** Document Dock viewer blank for many PT School PDFs; entry card mixed textbook with weekly materials; some files work after rename, many do not.
+
+**Root causes documented in `docs/root/AGENT_GUARDRAILS.md`:**
+
+1. `/api/tutor/materials/<id>/file` 403 — synced paths outside uploads allow-list (fixed in `api_tutor_materials.py`).
+2. Chapter-split rows (`#chNN`) — logical paths, need text viewer not PDF iframe (fixed in `materialViewer.ts` / `MaterialViewer.tsx`).
+3. ~130/264 `rag_docs` rows point at missing on-disk paths after PT School renames — needs **Sync Root Folder**, not per-file re-upload.
+
+**Code touched:** `brain/dashboard/api_tutor_materials.py`, `dashboard_rebuild/client/src/lib/materialViewer.ts`, `MaterialViewer.tsx`, `studioEntryMaterials.ts`, `StudioEntryMaterialsSection.tsx`, `materialFolder.ts`, tests.
+
+**Validation:** pytest material-file routes (3), Vitest MaterialViewer + entry materials; live curl + agent-browser on `5127` after dashboard restart.
+
+**Follow-up code (backlog):** material path health UI, viewer error surfacing, post-rename reconcile helper — see guardrails entry “Library Materials Stale After Folder/File Renames”.
+
 ## 2026-05-19 - Tutor study run epic (#160–#166)
 
 - Shipped General Q&A + teach gate, study-run lifecycle hero, multi-leg teach list, versioned working summaries, prompt assembler (summary + recency tail), and polish draft checkpoint/final flow on branch `design-system/token-remediation` (`b3f1e476`).

@@ -43,6 +43,7 @@ import {
 } from "@/lib/tutorClientState";
 import { resolveResumableTutorHubCandidate } from "@/lib/tutorResumeCandidate";
 import { readTutorShellQuery, writeTutorShellQuery } from "@/lib/tutorUtils";
+import { isTutorStageShellEnabled } from "@/lib/tutorStageShell";
 import {
   normalizeStudioWorkspaceObjects,
 } from "@/lib/studioWorkspaceObjects";
@@ -385,18 +386,23 @@ function useTutorPageController() {
       ) {
         setActiveBoardId(nextProjectShell.workspace_state.active_board_id);
       }
-      setViewerState(nextProjectShell.workspace_state.viewer_state || null);
+      const restoredViewerState =
+        nextProjectShell.workspace_state.viewer_state || null;
+      setViewerState(restoredViewerState);
       // Restore the floating panel layout from the server when the user has
       // already committed to Studio on this device. A direct `mode=studio`
       // route is also an explicit Studio entry, so it should honor saved
       // panel state instead of showing an empty entry card over it.
       const shouldRestoreSavedStudioLayout =
         readTutorEntryCardDismissed() || initialRouteQuery.mode === "studio";
+      const stageShellEnabled = isTutorStageShellEnabled(restoredViewerState);
       if (shouldRestoreSavedStudioLayout) {
         setPanelLayout(
-          normalizeStudioPanelLayout(
-            nextProjectShell.workspace_state.panel_layout,
-          ),
+          stageShellEnabled
+            ? []
+            : normalizeStudioPanelLayout(
+                nextProjectShell.workspace_state.panel_layout,
+              ),
         );
       }
       setDocumentTabs(

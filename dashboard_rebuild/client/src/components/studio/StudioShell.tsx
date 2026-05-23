@@ -446,6 +446,14 @@ function buildStudioShellViewportCenter(
   };
 }
 
+function closePanelLayoutByKey(
+  current: StudioPanelLayoutItem[],
+  panelKey: string,
+): StudioPanelLayoutItem[] {
+  const normalizedKey = normalizePanelKey(panelKey);
+  return current.filter((item) => normalizePanelKey(item.panel) !== normalizedKey);
+}
+
 function spawnPanelLayout(
   current: StudioPanelLayoutItem[],
   definition: StudioPanelDefinition,
@@ -1331,6 +1339,26 @@ export function StudioShell({
     [popouts, cleanupPopoutBookkeeping],
   );
 
+  const closePanelsForKey = useCallback(
+    (panelKey: string) => {
+      const normalizedKey = normalizePanelKey(panelKey);
+      const removingIds = resolvedLayout
+        .filter((item) => item.panel === normalizedKey)
+        .map((item) => item.id);
+
+      for (const panelId of removingIds) {
+        if (popouts[panelId]) {
+          handleSendBack(panelId);
+        }
+      }
+
+      queuePanelLayoutChange((current) =>
+        closePanelLayoutByKey(current, normalizedKey),
+      );
+    },
+    [handleSendBack, popouts, queuePanelLayoutChange, resolvedLayout],
+  );
+
   const handlePopOut = useCallback(
     (panelId: string) => {
       const existing = popouts[panelId];
@@ -1719,7 +1747,7 @@ export function StudioShell({
             <div
               data-testid="studio-entry-state"
               data-canvas-drag-disabled="true"
-              className="studio-canvas-drag-disabled max-h-[90vh] w-[min(34rem,calc(100vw-4rem))] overflow-y-auto rounded-2xl border border-primary/20 bg-black/90 p-8 shadow-2xl"
+              className="studio-canvas-drag-disabled max-h-[min(92vh,56rem)] w-[min(56rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-primary/20 bg-black/90 p-6 shadow-2xl sm:p-8"
               onWheel={(event) => {
                 event.stopPropagation();
               }}
@@ -1795,32 +1823,67 @@ export function StudioShell({
                     );
                     const PanelIcon = definition.icon;
                     return (
-                      <button
+                      <div
                         key={`${stage.key}:${definition.panel}`}
-                        type="button"
-                        data-testid={`studio-open-panel-${definition.panel}`}
-                        aria-label={`Open ${definition.title} panel`}
-                        aria-pressed={open}
-                        title={definition.title}
-                        onClick={() => {
-                          queuePanelLayoutChange((current) =>
-                            spawnPanelLayout(current, definition),
-                          );
-                          setPendingCenterPanelKey(definition.panel);
-                          if (resolvedLayout.length === 0) {
-                            setShouldFocusLayout(true);
-                          }
-                        }}
                         className={cn(
-                          "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                          "flex h-8 shrink-0 items-stretch overflow-hidden rounded-md",
                           open &&
                             !definition.allowMultiple &&
-                            "bg-rose-500/15 text-rose-50",
+                            "bg-rose-500/15",
                         )}
                       >
-                        <PanelIcon className="h-3.5 w-3.5 opacity-80" />
-                        {definition.title}
-                      </button>
+                        <button
+                          type="button"
+                          data-testid={`studio-open-panel-${definition.panel}`}
+                          aria-label={
+                            open
+                              ? `Focus ${definition.title} panel`
+                              : `Open ${definition.title} panel`
+                          }
+                          aria-pressed={open}
+                          title={
+                            open
+                              ? `Focus ${definition.title}`
+                              : definition.title
+                          }
+                          onClick={() => {
+                            queuePanelLayoutChange((current) =>
+                              spawnPanelLayout(current, definition),
+                            );
+                            setPendingCenterPanelKey(definition.panel);
+                            if (resolvedLayout.length === 0) {
+                              setShouldFocusLayout(true);
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center gap-1.5 px-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                            open &&
+                              !definition.allowMultiple &&
+                              "text-rose-50",
+                          )}
+                        >
+                          <PanelIcon className="h-3.5 w-3.5 opacity-80" />
+                          {definition.title}
+                        </button>
+                        {open ? (
+                          <button
+                            type="button"
+                            data-testid={`studio-close-panel-${definition.panel}`}
+                            aria-label={`Close ${definition.title} panel`}
+                            title={`Close ${definition.title}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              closePanelsForKey(definition.panel);
+                            }}
+                            className={cn(
+                              "flex w-7 shrink-0 items-center justify-center border-l border-white/[0.08] text-zinc-400 transition-colors hover:bg-white/[0.08] hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                              !definition.allowMultiple && "text-rose-100/80",
+                            )}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
                     );
                   }),
               )}

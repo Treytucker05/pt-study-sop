@@ -11,6 +11,13 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
 
 ## Current Board (In-Progress)
 
+- [ ] **TUTOR-STAGE-SHELL-2026-05-19** — Tutor stage shell (wireframe → prod)
+  - TDD plan: `docs/plans/TUTOR_STAGE_SHELL_TDD_PLAN.md`
+  - Assignee: @cursor
+  - Slices 0–9; flag `TutorStageShell` in `TutorShell` (slice 7+)
+  - Progress: Slices 0–9 done (persist `active_tab` + `board_layout_mode` in `viewer_state`; stage shell default on; legacy `panel_layout` cleared on hydrate)
+  - Done when: Read/Prime/Teach/Polish use stage+board; board split/collapsed/fullscreen; workspace toolbar replaces tabs; clip expands board
+
 - Canonical execution order: `PRIME -> TEACH -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
 - Execution references:
   - `README.md` (master repo truth)

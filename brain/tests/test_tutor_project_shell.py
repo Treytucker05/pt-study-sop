@@ -835,6 +835,57 @@ def test_material_file_route_streams_original_file(client, tmp_path, monkeypatch
     assert response.data == b"%PDF-1.4 test"
 
 
+def test_material_file_route_streams_synced_pt_school_file(
+    client, tmp_path, monkeypatch
+):
+    school_root = tmp_path / "PT School" / "11_Movement Science II"
+    school_root.mkdir(parents=True)
+    pdf_path = school_root / "Week 3 Lecture.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 synced")
+
+    monkeypatch.setenv("PT_SCHOOL_MATERIALS_DIR", str(tmp_path / "PT School"))
+
+    _insert_course(109, "Movement Science II")
+    _insert_material(
+        8802,
+        title="Week 3 Lecture",
+        source_path=str(pdf_path),
+        file_type="pdf",
+        content="week 3 notes",
+        course_id=109,
+    )
+
+    response = client.get("/api/tutor/materials/8802/file")
+
+    assert response.status_code == 200
+    assert response.data == b"%PDF-1.4 synced"
+
+
+def test_material_file_route_strips_chapter_fragment_from_logical_source_path(
+    client, tmp_path, monkeypatch
+):
+    school_root = tmp_path / "PT School" / "Textbook"
+    school_root.mkdir(parents=True)
+    pdf_path = school_root / "Big Book.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 book")
+
+    monkeypatch.setenv("PT_SCHOOL_MATERIALS_DIR", str(tmp_path / "PT School"))
+
+    _insert_material(
+        8803,
+        title="Big Book — Ch 1",
+        source_path=f"{pdf_path}#ch01",
+        file_type="pdf",
+        content="# Big Book — Chapter 1\n\nIntro text",
+        course_id=109,
+    )
+
+    response = client.get("/api/tutor/materials/8803/file")
+
+    assert response.status_code == 200
+    assert response.data == b"%PDF-1.4 book"
+
+
 def test_studio_run_returns_combined_shell_and_studio_state(client):
     _insert_course(120, "Physiology")
     _insert_tutor_session(120, "studio-run-120", "Cardiac Output")

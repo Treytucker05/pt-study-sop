@@ -468,12 +468,12 @@ describe("StudioShell", () => {
     expect(outerPointerDown).not.toHaveBeenCalled();
     expect(entryOverlay).toHaveClass("pointer-events-auto", "bg-black/70");
     expect(entryState).toHaveClass(
-      "max-h-[90vh]",
       "overflow-y-auto",
       "border",
       "border-primary/20",
       "bg-black/90",
       "shadow-2xl",
+      "rounded-2xl",
     );
   });
 
@@ -893,6 +893,41 @@ describe("StudioShell", () => {
     );
 
     expect(setTransformSpy).not.toHaveBeenCalled();
+  });
+
+  it("closes a toolbar panel from the close affordance without removing other panels", () => {
+    const setPanelLayout = vi.fn();
+    const studyLayout = buildStudioShellPresetLayout("study");
+
+    render(
+      <StudioShell
+        panelLayout={studyLayout}
+        setPanelLayout={setPanelLayout}
+        documentDock={<div>Document Dock</div>}
+        workspace={<div>Workspace</div>}
+        tutorPanel={<div>Tutor</div>}
+      />,
+    );
+
+    expect(screen.getByTestId("studio-document-dock")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("studio-close-panel-document_dock"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-close-panel-document_dock"));
+
+    const updater = setPanelLayout.mock.calls.at(-1)?.[0];
+    expect(typeof updater).toBe("function");
+
+    const nextLayout = updater(studyLayout);
+    expect(
+      nextLayout.some(
+        (item: { panel: string }) => item.panel === "document_dock",
+      ),
+    ).toBe(false);
+    expect(
+      nextLayout.some((item: { panel: string }) => item.panel === "workspace"),
+    ).toBe(true);
   });
 
   it("lets the user group and ungroup selected windows from the toolbar", async () => {

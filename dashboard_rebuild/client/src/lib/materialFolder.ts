@@ -61,7 +61,9 @@ export function getMaterialFolder(mat: Material): string {
   const normalizedSource = sourcePath.toLowerCase();
   if (
     normalizedSource.includes("/uploads/") ||
-    normalizedSource.includes("\\uploads\\")
+    normalizedSource.includes("\\uploads\\") ||
+    normalizedSource.startsWith("uploads/") ||
+    normalizedSource.startsWith("uploads\\")
   )
     return "Uploaded Files";
 

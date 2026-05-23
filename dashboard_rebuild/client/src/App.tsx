@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/layout";
+import { normalizeRoutePath } from "@/lib/routePaths";
 
 const Brain = lazy(() => import("@/pages/brain"));
 const CalendarPage = lazy(() => import("@/pages/calendar"));
@@ -26,13 +27,6 @@ const ROUTES = [
   { path: "/library", Component: Library },
   { path: "/vault-health", Component: VaultHealth },
 ];
-
-function normalizeRoutePath(path: string) {
-  if (path === "/brain") {
-    return "/";
-  }
-  return path;
-}
 
 const LoadingFallback = () => (
   <div className="p-4 font-terminal text-xs text-muted-foreground">

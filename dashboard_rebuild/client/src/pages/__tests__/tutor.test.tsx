@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps, ReactNode } from "react";
 
 import { expandAllSourceFolders } from "@/test/sourceShelf";
+import * as tutorClientState from "@/lib/tutorClientState";
 
 const {
   getSessionMock,
@@ -389,6 +390,7 @@ function makeProjectShell(
     prime_packet_promoted_objects: Record<string, unknown>[];
     polish_packet_promoted_notes: Record<string, unknown>[];
     selected_material_ids: number[];
+    viewer_state: Record<string, unknown> | null;
   }> = {},
 ) {
   const activeSessionId =
@@ -410,7 +412,8 @@ function makeProjectShell(
       last_mode: overrides.last_mode || "studio",
       active_board_scope: overrides.active_board_scope || "project",
       active_board_id: null,
-      viewer_state: null,
+      viewer_state:
+        overrides.viewer_state === undefined ? null : overrides.viewer_state,
       panel_layout: overrides.panel_layout || [],
       document_tabs: overrides.document_tabs || [],
       active_document_tab_id: overrides.active_document_tab_id || null,
@@ -2369,6 +2372,57 @@ describe("Tutor page restore", () => {
       ]);
       expect(lastCall?.active_document_tab_id).toBe("doc-material-101");
     });
+  });
+
+  it("clears floating panel_layout when stage shell is enabled and restores stage viewer fields", async () => {
+    vi.spyOn(tutorClientState, "readTutorEntryCardDismissed").mockReturnValue(true);
+
+    getProjectShellMock.mockResolvedValue(
+      makeProjectShell(77, {
+        panel_layout: [
+          {
+            id: "panel-workspace",
+            panel: "workspace",
+            position: { x: 1090, y: 120 },
+            size: { width: 940, height: 760 },
+            zIndex: 4,
+            collapsed: false,
+          },
+        ],
+        viewer_state: {
+          stage_shell_v1: true,
+          active_tab: "prime",
+          board_layout_mode: "collapsed",
+        },
+      }),
+    );
+    getCurrentCourseMock.mockResolvedValue({ currentCourse: { id: 77 } });
+
+    renderTutor();
+
+    expect(await screen.findByTestId("tutor-stage-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-stage-prime")).toBeVisible();
+    expect(screen.getByTestId("tutor-session-board-root")).toHaveAttribute(
+      "data-layout",
+      "collapsed",
+    );
+    expect(screen.queryByTestId("studio-canvas")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(saveProjectShellStateMock).toHaveBeenCalled();
+      const lastCall =
+        saveProjectShellStateMock.mock.calls[
+          saveProjectShellStateMock.mock.calls.length - 1
+        ]?.[0] as { panel_layout?: unknown[]; viewer_state?: Record<string, unknown> };
+      expect(lastCall?.panel_layout).toEqual([]);
+      expect(lastCall?.viewer_state).toMatchObject({
+        stage_shell_v1: true,
+        active_tab: "prime",
+        board_layout_mode: "collapsed",
+      });
+    });
+
+    vi.restoreAllMocks();
   });
 
   it("preserves multiple document tabs from project shell without reopening the old panel layout", async () => {

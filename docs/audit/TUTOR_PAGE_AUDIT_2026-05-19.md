@@ -4,6 +4,17 @@
 > **Supersedes for UI structure:** `docs/audit/TUTOR_FULL_AUDIT.md` (March 2026, pre–Floating Studio).
 > **Code entrypoints:** `dashboard_rebuild/client/src/pages/tutor.tsx`, `TutorShell.tsx`, `brain/dashboard/api_tutor*.py`.
 
+### Addendum (2026-05-19) — Tutor Stage Shell v1
+
+When `viewer_state.stage_shell_v1` is not `false` (default **on** outside Vitest), `TutorShell` renders **`TutorStageShell`** instead of the floating `StudioShell` canvas:
+
+- Tabs: Sources · Read · Prime · Teach · Polish · Settings
+- Shared **session board** below productive tabs (split / collapsed / fullscreen)
+- `viewer_state` persists `active_tab`, `board_layout_mode`, and `stage_shell_v1`
+- Legacy `panel_layout` is **not** restored on hydrate (cleared to `[]`)
+
+Opt out: `viewer_state.stage_shell_v1: false`. Plan: `docs/plans/TUTOR_STAGE_SHELL_TDD_PLAN.md`.
+
 ---
 
 ## 1. What the page is

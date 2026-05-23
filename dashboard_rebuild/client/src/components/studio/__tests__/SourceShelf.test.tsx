@@ -157,6 +157,30 @@ describe("SourceShelf", () => {
     });
   });
 
+  it("expands folders and shows only loaded sources when Current Run is selected", async () => {
+    const user = userEvent.setup();
+    renderSourceShelfHarness();
+
+    const shelf = screen.getByTestId("source-shelf-content");
+    await user.click(within(shelf).getByRole("button", { name: /^current run$/i }));
+
+    expect(within(shelf).getByRole("button", { name: /^current run$/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(shelf).getByText("Cardiac Output Lecture")).toBeInTheDocument();
+    expect(within(shelf).getByText("Cardio.md")).toBeInTheDocument();
+    expect(within(shelf).queryByText("Neuro Outlier")).not.toBeInTheDocument();
+    const courseFolderToggle = within(shelf)
+      .getAllByRole("button")
+      .find(
+        (button) =>
+          /exercise physiology/i.test(button.getAttribute("aria-label") ?? "") &&
+          /loaded/i.test(button.getAttribute("aria-label") ?? ""),
+      );
+    expect(courseFolderToggle?.querySelector(".lucide-chevron-down")).not.toBeNull();
+  });
+
   it("renders one searchable tree, filters it in real time, and cascades course checkbox selection", async () => {
     const user = userEvent.setup();
     renderSourceShelfHarness();

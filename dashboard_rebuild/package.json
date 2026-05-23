@@ -60,6 +60,7 @@
     "connect-pg-simple": "^10.0.0",
     "dagre": "^0.8.5",
     "date-fns": "^3.6.0",
+    "docx-preview": "^0.3.7",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.39.3",
     "drizzle-zod": "^0.7.1",

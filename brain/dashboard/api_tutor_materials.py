@@ -630,10 +630,19 @@ def _normalize_sync_relative_path(raw_path: object) -> str:
 def _parse_sync_folder_root_and_exts(
     data: dict[str, Any]
 ) -> tuple[Path, Optional[set[str]]]:
+    folder_path_raw = data.get("folder_path")
+    if not folder_path_raw:
+        try:
+            from config import STUDY_RAG_DIR
+
+            folder_path_raw = STUDY_RAG_DIR
+        except Exception:
+            folder_path_raw = None
     folder_path_raw = (
-        data.get("folder_path")
+        folder_path_raw
         or os.environ.get("TUTOR_MATERIALS_DIR")
         or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+        or os.environ.get("PT_STUDY_RAG_DIR")
     )
     if not folder_path_raw:
         raise ValueError(
@@ -2445,6 +2454,36 @@ def get_material_content(material_id: int):
     )
 
 
+def _configured_material_sync_roots() -> tuple[Path, ...]:
+    """Roots configured for Library / Source Shelf folder sync (e.g. PT School)."""
+    roots: list[Path] = []
+    try:
+        from config import STUDY_RAG_DIR
+
+        if STUDY_RAG_DIR:
+            root = Path(STUDY_RAG_DIR).expanduser()
+            if root.exists() and root.is_dir():
+                roots.append(root)
+    except Exception:
+        pass
+
+    for env_key in (
+        "TUTOR_MATERIALS_DIR",
+        "PT_SCHOOL_MATERIALS_DIR",
+        "PT_STUDY_RAG_DIR",
+    ):
+        raw = os.environ.get(env_key)
+        if not raw:
+            continue
+        try:
+            root = Path(str(raw).strip().strip('"').strip("'")).expanduser()
+        except (TypeError, ValueError):
+            continue
+        if root.exists() and root.is_dir():
+            roots.append(root)
+    return tuple(roots)
+
+
 def _allowed_material_roots() -> tuple[Path, ...]:
     """Resolve the active allow-list at call time.
 
@@ -2452,6 +2491,10 @@ def _allowed_material_roots() -> tuple[Path, ...]:
     monkeypatch ``api_tutor_utils.UPLOADS_DIR`` (and occasionally this
     module's local copy) to redirect into a sandbox, so we look them up
     fresh on each call rather than captureing them at import time.
+
+    Synced study materials also live under ``TUTOR_MATERIALS_DIR`` /
+    ``PT_SCHOOL_MATERIALS_DIR``; those roots must be servable or the
+    inline viewer 403s while the DB row still points at the real file.
     """
     from dashboard import api_tutor_utils as _utils
 
@@ -2461,6 +2504,7 @@ def _allowed_material_roots() -> tuple[Path, ...]:
         UPLOADS_DIR,
         getattr(_utils, "EXTRACTED_IMAGES_ROOT", None),
         EXTRACTED_IMAGES_ROOT,
+        *_configured_material_sync_roots(),
     ):
         if source is None:
             continue
@@ -2468,7 +2512,37 @@ def _allowed_material_roots() -> tuple[Path, ...]:
             candidates.append(Path(source))
         except (TypeError, ValueError):
             continue
-    return tuple(candidates)
+
+    deduped: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        try:
+            key = str(candidate.expanduser().resolve(strict=False))
+        except OSError:
+            key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(candidate)
+    return tuple(deduped)
+
+
+def _resolve_serveable_material_path(raw_path: str) -> Optional[Path]:
+    """Map a DB path to a real on-disk file (strip chapter-split fragments)."""
+    normalized = str(raw_path or "").strip()
+    if not normalized:
+        return None
+
+    fragment_index = normalized.find("#")
+    if fragment_index >= 0:
+        normalized = normalized[:fragment_index].strip()
+    if not normalized:
+        return None
+
+    candidate = Path(normalized).expanduser()
+    if candidate.exists() and candidate.is_file():
+        return candidate
+    return None
 
 
 def _path_is_inside_allowed_roots(candidate: Path) -> bool:
@@ -2514,10 +2588,8 @@ def get_material_file(material_id: int):
         str(row["source_path"] or "").strip(),
     ]
     for raw_path in file_candidates:
-        if not raw_path:
-            continue
-        candidate = Path(raw_path)
-        if not (candidate.exists() and candidate.is_file()):
+        candidate = _resolve_serveable_material_path(raw_path)
+        if candidate is None:
             continue
         if not _path_is_inside_allowed_roots(candidate):
             _LOG.warning(

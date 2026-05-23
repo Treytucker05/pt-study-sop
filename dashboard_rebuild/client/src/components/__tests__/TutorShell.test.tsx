@@ -1716,9 +1716,9 @@ describe("TutorShell studio routing", () => {
 
     expect(screen.getByText("3 of 3 materials selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^deselect all$/i })).toBeInTheDocument();
-    expect(screen.getByText("PDF")).toBeInTheDocument();
-    expect(screen.getByText("MP4")).toBeInTheDocument();
-    expect(screen.getByText("DOCX")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("studio-entry-material-group-uploaded"),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^deselect all$/i }));
     expect(screen.getByText("0 of 3 materials selected")).toBeInTheDocument();
@@ -1850,7 +1850,10 @@ describe("TutorShell studio routing", () => {
 
     expect(await screen.findByTestId("studio-entry-state")).toBeInTheDocument();
     const uploadInput = screen.getByTestId("studio-entry-upload-input");
-    expect(uploadInput).toHaveAttribute("accept", ".pdf,.docx,.mp4,.pptx");
+    expect(uploadInput).toHaveAttribute(
+      "accept",
+      ".pdf,.docx,.pptx,.md,.txt,.mp4",
+    );
 
     const uploadPromise = user.upload(
       uploadInput,
@@ -1859,9 +1862,10 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
-    expect(await screen.findByTestId("studio-entry-upload-status")).toHaveTextContent(
-      "Uploading to Library and Current Run...",
-    );
+    const uploadStatus = await screen.findByTestId("studio-entry-upload-status");
+    expect(uploadStatus).toHaveTextContent("Uploading to Library and Current Run");
+    expect(uploadStatus).toHaveTextContent("0 of 1");
+    expect(uploadStatus).toHaveTextContent("renal-review-deck.pptx");
     (resolveUpload as unknown as (value: { id: number }) => void)({ id: 104 });
     await uploadPromise;
 
@@ -1925,9 +1929,9 @@ describe("TutorShell studio routing", () => {
     expect(
       within(entryState).queryByText(/C:\\Users\\treyt\\Documents/i),
     ).not.toBeInTheDocument();
-    expect(within(entryState).getByText("PDF")).toBeInTheDocument();
-    expect(within(entryState).getByText("MP4")).toBeInTheDocument();
-    expect(within(entryState).getByText("DOCX")).toBeInTheDocument();
+    expect(
+      within(entryState).getByTestId("studio-entry-material-group-section-pt-week9"),
+    ).toBeInTheDocument();
   });
 
   it("clears the open canvas layout and workspace objects from the toolbar", async () => {
@@ -2520,7 +2524,7 @@ describe("TutorShell studio routing", () => {
     });
   });
 
-  it("switches the unified workspace panel across Canvas, Mind Map, and Concept Map tabs", async () => {
+  it("switches the unified workspace panel across select, mind map, and concept map tools", async () => {
     const user = userEvent.setup();
 
     renderTutorShell("workspace", {
@@ -2541,13 +2545,13 @@ describe("TutorShell studio routing", () => {
     );
     expect(screen.getByTestId("studio-tldraw-workspace")).toBeInTheDocument();
 
-    await user.click(screen.getByTestId("studio-workspace-tab-mind-map"));
+    await user.click(screen.getByTestId("studio-workspace-tool-mind-map"));
     expect(await screen.findByTestId("mock-mind-map")).toBeInTheDocument();
 
-    await user.click(screen.getByTestId("studio-workspace-tab-concept-map"));
+    await user.click(screen.getByTestId("studio-workspace-tool-concept-map"));
     expect(await screen.findByTestId("mock-concept-map")).toBeInTheDocument();
 
-    await user.click(screen.getByTestId("studio-workspace-tab-canvas"));
+    await user.click(screen.getByTestId("studio-workspace-tool-select"));
     expect(screen.getByTestId("studio-tldraw-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("mock-mind-map")).toBeInTheDocument();
     expect(screen.getByTestId("mock-concept-map")).toBeInTheDocument();
@@ -2575,8 +2579,8 @@ describe("TutorShell studio routing", () => {
       "data-initial-mermaid",
       "graph TD\n  A[Priming Map] --> B[Graph Tool]",
     );
-    expect(screen.getByTestId("studio-workspace-tab-concept-map")).toHaveAttribute(
-      "aria-selected",
+    expect(screen.getByTestId("studio-workspace-tool-concept-map")).toHaveAttribute(
+      "aria-pressed",
       "true",
     );
   });
@@ -2760,7 +2764,11 @@ describe("TutorShell studio routing", () => {
     const sourceShelf = screen.getByTestId("studio-source-shelf");
     await expandAllSourceFolders(sourceShelf);
     const documentDock = screen.getByTestId("studio-document-dock");
-    const workspace = screen.getByTestId("studio-tldraw-workspace");
+    const getDocumentTab = (title: string) =>
+      within(within(documentDock).getByTestId("document-dock-tabs")).getByRole(
+        "button",
+        { name: title },
+      );
 
     await user.click(
       within(sourceShelf).getByRole("button", {
@@ -2768,11 +2776,10 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
-    expect(
-      await within(documentDock).findByRole("button", {
-        name: /Cardiac Output Lecture/i,
-      }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(getDocumentTab("Cardiac Output Lecture")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(
       await screen.findByText(
         /Cardiac output depends on stroke volume and heart rate/i,
@@ -2786,25 +2793,12 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
-    expect(
-      await within(documentDock).findByRole("button", {
-        name: /Afterload Drill/i,
-      }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(getDocumentTab("Afterload Drill")).toHaveAttribute("aria-pressed", "true");
     expect(
       await screen.findByText(/Afterload rises when aortic pressure increases/i),
     ).toBeInTheDocument();
 
-    await user.click(
-      within(documentDock).getByRole("button", {
-        name: /Cardiac Output Lecture/i,
-      }),
-    );
-    expect(
-      await within(documentDock).findByRole("button", {
-        name: /Cardiac Output Lecture/i,
-      }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await user.click(getDocumentTab("Cardiac Output Lecture"));
     expect(
       await screen.findByText(
         /Cardiac output depends on stroke volume and heart rate/i,
@@ -2813,12 +2807,32 @@ describe("TutorShell studio routing", () => {
 
     await user.click(
       within(documentDock).getByRole("button", {
-        name: /Afterload Drill/i,
+        name: /Close Afterload Drill/i,
       }),
     );
     expect(
-      await screen.findByText(/Afterload rises when aortic pressure increases/i),
+      within(within(documentDock).getByTestId("document-dock-tabs")).queryByRole(
+        "button",
+        { name: "Afterload Drill" },
+      ),
+    ).not.toBeInTheDocument();
+    expect(getDocumentTab("Cardiac Output Lecture")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      await screen.findByText(
+        /Cardiac output depends on stroke volume and heart rate/i,
+      ),
     ).toBeInTheDocument();
+
+    await user.click(within(sourceShelf).getByRole("button", { name: /^library$/i }));
+    await user.click(
+      within(sourceShelf).getByRole("button", {
+        name: /Open Afterload Drill in Document Dock/i,
+      }),
+    );
+    await user.click(getDocumentTab("Afterload Drill"));
 
     const selectedPassage = within(documentDock).getByLabelText(/Selected passage/i);
     await user.clear(selectedPassage);
@@ -2833,6 +2847,7 @@ describe("TutorShell studio routing", () => {
       }),
     );
 
+    const workspace = await screen.findByTestId("studio-tldraw-workspace");
     expect(workspace).toHaveTextContent("Afterload Drill");
     expect(workspace).toHaveTextContent(
       "Afterload rises when aortic pressure increases during systole.",

@@ -1,14 +1,26 @@
 import { useEffect, useMemo, useState, type ClipboardEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MaterialViewer } from "@/components/MaterialViewer";
-import { api } from "@/lib/api";
-import type { Material, MaterialContent } from "@/lib/api";
+import { DocumentPaneWorkspace } from "@/components/studio/DocumentPaneWorkspace";
+import type { Material } from "@/lib/api";
+import {
+  assignTabToDocumentPane,
+  clearTabFromDocumentPanes,
+  closeDocumentPaneLeaf,
+  collectDocumentPaneLeaves,
+  createDocumentPaneLayout,
+  findDocumentPaneLeaf,
+  MAX_DOCUMENT_PANE_LEAVES,
+  splitDocumentPane,
+  type DocumentPaneSplitDirection,
+} from "@/lib/documentPaneLayout";
+import { clampMaterialViewerZoom } from "@/lib/materialViewerZoom";
 import { basenameFromPath } from "@/lib/pathDisplay";
 import type { StudioDocumentTab } from "@/lib/studioPanelLayout";
+import { cn } from "@/lib/utils";
 import {
   createStudioExcerptWorkspaceObject,
   createStudioImageWorkspaceObject,
@@ -23,6 +35,7 @@ export interface StudioDocumentDockProps {
   documentTabs?: StudioDocumentTab[];
   activeDocumentTabId?: string | null;
   onSelectDocumentTab?: (tabId: string) => void;
+  onCloseDocumentTab?: (tabId: string) => void;
   onClipExcerpt?: (workspaceObject: StudioWorkspaceObject) => void;
 }
 
@@ -93,6 +106,7 @@ export function StudioDocumentDock({
   documentTabs = [],
   activeDocumentTabId = null,
   onSelectDocumentTab,
+  onCloseDocumentTab,
   onClipExcerpt,
 }: StudioDocumentDockProps) {
   const activeTab = useMemo(
@@ -111,28 +125,49 @@ export function StudioDocumentDock({
     [materials],
   );
 
+  const hasDocumentTabs = documentTabs.length > 0;
   const viewerMaterialId =
     typeof viewerState?.material_id === "number" ? viewerState.material_id : null;
   const activeTabMaterialId =
     activeTab?.kind === "material" && typeof activeTab.sourceId === "number"
       ? activeTab.sourceId
       : null;
-  const activeMaterial =
-    (activeTabMaterialId !== null ? materialById.get(activeTabMaterialId) : null) ||
-    (viewerMaterialId !== null ? materialById.get(viewerMaterialId) : null) ||
-    selectedMaterials[0] ||
-    null;
-  const activeVaultPath =
-    activeTab?.kind === "vault" && typeof activeTab.sourcePath === "string"
-      ? activeTab.sourcePath
-      : typeof viewerState?.source_kind === "string" &&
-          viewerState.source_kind === "vault" &&
-          typeof viewerState?.source_path === "string"
-        ? viewerState.source_path
-        : null;
-  const activeVaultPreviewable =
-    typeof activeVaultPath === "string" &&
-    activeVaultPath.trim().toLowerCase().endsWith(".md");
+  const activeMaterial = useMemo(() => {
+    if (hasDocumentTabs) {
+      if (activeTabMaterialId === null) return null;
+      return materialById.get(activeTabMaterialId) ?? null;
+    }
+
+    if (activeTabMaterialId !== null) {
+      return materialById.get(activeTabMaterialId) ?? null;
+    }
+    if (viewerMaterialId !== null) {
+      return materialById.get(viewerMaterialId) ?? null;
+    }
+    return selectedMaterials[0] ?? null;
+  }, [
+    activeTabMaterialId,
+    hasDocumentTabs,
+    materialById,
+    selectedMaterials,
+    viewerMaterialId,
+  ]);
+  const activeVaultPath = useMemo(() => {
+    if (activeTab?.kind === "vault" && typeof activeTab.sourcePath === "string") {
+      return activeTab.sourcePath;
+    }
+    if (hasDocumentTabs) {
+      return null;
+    }
+    if (
+      typeof viewerState?.source_kind === "string" &&
+      viewerState.source_kind === "vault" &&
+      typeof viewerState?.source_path === "string"
+    ) {
+      return viewerState.source_path;
+    }
+    return null;
+  }, [activeTab, hasDocumentTabs, viewerState]);
   const activeDocumentTitle =
     activeTab?.title ||
     (activeVaultPath
@@ -154,23 +189,36 @@ export function StudioDocumentDock({
     typeof viewerState?.file_type === "string"
       ? viewerState.file_type
       : activeMaterial?.file_type || (activeVaultPath ? "VAULT" : activeTab?.kind);
-  const { data: activeMaterialContent, isLoading: activeMaterialLoading } =
-    useQuery<MaterialContent>({
-      queryKey: ["studio-document-dock", "material-content", activeMaterial?.id],
-      queryFn: () => api.tutor.getMaterialContent(activeMaterial!.id),
-      enabled: activeMaterial !== null,
-      staleTime: 60 * 1000,
-    });
-  const { data: activeVaultFile, isLoading: activeVaultLoading } = useQuery({
-    queryKey: ["studio-document-dock", "vault-file", activeVaultPath],
-    queryFn: () => api.obsidian.getFile(activeVaultPath!),
-    enabled: activeVaultPreviewable,
-    staleTime: 60 * 1000,
-  });
-  const activeVaultText =
-    activeVaultFile && "success" in activeVaultFile && activeVaultFile.success
-      ? String(activeVaultFile.content || "")
-      : "";
+  const viewerFallbackTab = useMemo((): StudioDocumentTab | null => {
+    if (hasDocumentTabs) return null;
+    if (activeMaterial) {
+      return {
+        id: `doc-material-${activeMaterial.id}`,
+        kind: "material",
+        title: activeMaterial.title,
+        sourceId: activeMaterial.id,
+        sourcePath: activeMaterial.source_path ?? null,
+      };
+    }
+    if (activeVaultPath) {
+      return {
+        id: `doc-vault-${activeVaultPath}`,
+        kind: "vault",
+        title: activeDocumentTitle,
+        sourcePath: activeVaultPath,
+      };
+    }
+    return null;
+  }, [
+    activeDocumentTitle,
+    activeMaterial,
+    activeVaultPath,
+    hasDocumentTabs,
+  ]);
+  const workspaceDocumentTabs = useMemo(() => {
+    if (documentTabs.length > 0) return documentTabs;
+    return viewerFallbackTab ? [viewerFallbackTab] : [];
+  }, [documentTabs, viewerFallbackTab]);
   const initialExcerptText = useMemo(
     () =>
       typeof viewerState?.selection_text === "string"
@@ -186,6 +234,78 @@ export function StudioDocumentDock({
   const [excerptText, setExcerptText] = useState(initialExcerptText);
   const [clipImage, setClipImage] = useState<ClipboardImageClip | null>(null);
   const [clipStatus, setClipStatus] = useState<string | null>(null);
+  const [paneLayout, setPaneLayout] = useState(() =>
+    createDocumentPaneLayout(activeDocumentTabId),
+  );
+  const [activePaneId, setActivePaneId] = useState(
+    () => collectDocumentPaneLeaves(paneLayout)[0]?.id ?? "pane-1",
+  );
+  const [paneZoomLevels, setPaneZoomLevels] = useState<Record<string, number>>({});
+  const paneLeafCount = collectDocumentPaneLeaves(paneLayout).length;
+  const canSplitFurther = paneLeafCount < MAX_DOCUMENT_PANE_LEAVES;
+
+  const handleFocusPane = (paneId: string) => {
+    setActivePaneId(paneId);
+    const leaf = findDocumentPaneLeaf(paneLayout, paneId);
+    if (leaf?.tabId && leaf.tabId !== activeDocumentTabId) {
+      onSelectDocumentTab?.(leaf.tabId);
+    }
+  };
+
+  const handleSelectDocumentTab = (tabId: string) => {
+    setPaneLayout((current) => assignTabToDocumentPane(current, activePaneId, tabId));
+    onSelectDocumentTab?.(tabId);
+  };
+
+  const handleCloseDocumentTab = (tabId: string) => {
+    setPaneLayout((current) => clearTabFromDocumentPanes(current, tabId));
+    onCloseDocumentTab?.(tabId);
+  };
+
+  const handleSplitPane = (
+    paneId: string,
+    direction: DocumentPaneSplitDirection,
+  ) => {
+    setPaneLayout((current) => {
+      const next = splitDocumentPane(current, paneId, direction);
+      return next ?? current;
+    });
+  };
+
+  const handleClosePane = (paneId: string) => {
+    const nextLayout = closeDocumentPaneLeaf(paneLayout, paneId);
+    const leaves = collectDocumentPaneLeaves(nextLayout);
+    const nextActivePaneId = leaves.some((leaf) => leaf.id === activePaneId)
+      ? activePaneId
+      : leaves[0]?.id ?? activePaneId;
+
+    setPaneLayout(nextLayout);
+    setActivePaneId(nextActivePaneId);
+
+    const focusedLeaf = findDocumentPaneLeaf(nextLayout, nextActivePaneId);
+    if (focusedLeaf?.tabId && focusedLeaf.tabId !== activeDocumentTabId) {
+      onSelectDocumentTab?.(focusedLeaf.tabId);
+    }
+  };
+
+  const handlePaneZoomChange = (paneId: string, zoom: number) => {
+    setPaneZoomLevels((current) => ({
+      ...current,
+      [paneId]: clampMaterialViewerZoom(zoom),
+    }));
+  };
+
+  useEffect(() => {
+    const tabIdForPane = activeDocumentTabId ?? viewerFallbackTab?.id ?? null;
+    if (!tabIdForPane) return;
+    setPaneLayout((current) => {
+      const activeLeaf = findDocumentPaneLeaf(current, activePaneId);
+      if (activeLeaf?.tabId === tabIdForPane) {
+        return current;
+      }
+      return assignTabToDocumentPane(current, activePaneId, tabIdForPane);
+    });
+  }, [activeDocumentTabId, activePaneId, viewerFallbackTab?.id]);
 
   useEffect(() => {
     setExcerptText(initialExcerptText);
@@ -256,24 +376,49 @@ export function StudioDocumentDock({
     <div className="space-y-4 font-mono text-sm text-foreground/78">
       <div className="rounded-[var(--ds-r-085)] border border-primary/15 bg-black/15 p-3">
         {documentTabs.length > 0 ? (
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div
+            data-testid="document-dock-tabs"
+            className="mb-3 flex max-w-full gap-2 overflow-x-auto pb-1"
+          >
             {documentTabs.map((tab) => {
               const isActive = tab.id === activeDocumentTabId;
               return (
-                <Button
+                <div
                   key={tab.id}
-                  type="button"
-                  variant="outline"
-                  onClick={() => onSelectDocumentTab?.(tab.id)}
-                  aria-pressed={isActive}
-                  className={
+                  className={cn(
+                    "flex shrink-0 items-stretch overflow-hidden rounded-full border",
                     isActive
-                      ? "h-8 rounded-full border-primary/30 bg-primary/16 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary"
-                      : "h-8 rounded-full border-primary/14 bg-black/20 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/72"
-                  }
+                      ? "border-primary/30 bg-primary/16"
+                      : "border-primary/14 bg-black/20",
+                  )}
                 >
-                  {tab.title}
-                </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSelectDocumentTab(tab.id)}
+                    aria-pressed={isActive}
+                    title={tab.title}
+                    className={cn(
+                      "h-8 max-w-[220px] rounded-none border-0 bg-transparent px-3 font-mono text-[10px] uppercase tracking-[0.18em] shadow-none hover:bg-transparent",
+                      isActive ? "text-primary" : "text-foreground/72",
+                    )}
+                  >
+                    <span className="truncate">{tab.title}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    aria-label={`Close ${tab.title}`}
+                    title={`Close ${tab.title}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleCloseDocumentTab(tab.id);
+                    }}
+                    className="h-8 w-8 shrink-0 rounded-none border-0 border-l border-primary/14 bg-transparent px-0 text-foreground/60 shadow-none hover:bg-black/25 hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               );
             })}
           </div>
@@ -319,54 +464,26 @@ export function StudioDocumentDock({
           Source viewer
         </div>
         <div className="mt-1 text-sm text-foreground/72">
-          Open a source here, then clip the passage you want to move into the workspace.
+          Open sources from the shelf to add tabs. Split panes side-by-side or stacked, drag
+          dividers to resize, and each pane keeps its own zoom.
         </div>
-        <div className="mt-3 min-h-[220px] overflow-hidden rounded-[var(--ds-r-085)] border border-primary/12 bg-black/20">
-          {activeMaterial ? (
-            activeMaterialLoading ? (
-              <div className="flex min-h-[220px] items-center justify-center font-mono text-sm text-foreground/60">
-                Loading document...
-              </div>
-            ) : (
-              <MaterialViewer
-                source={{
-                  id: activeMaterial.id,
-                  title: activeMaterialContent?.title || activeMaterial.title,
-                  fileName: activeMaterial.source_path,
-                  fileType:
-                    activeMaterialContent?.file_type || activeMaterial.file_type,
-                  url: api.tutor.getMaterialFileUrl(activeMaterial.id),
-                  textContent: activeMaterialContent?.content || null,
-                }}
-                className="min-h-[220px] border-0"
-                onTextSelectionChange={({ text, label }) => {
-                  setExcerptText(text);
-                  setExcerptLabel(label);
-                }}
-              />
-            )
-          ) : activeVaultPath ? (
-            activeVaultPreviewable ? (
-              activeVaultLoading ? (
-                <div className="flex min-h-[220px] items-center justify-center font-mono text-sm text-foreground/60">
-                  Loading vault note...
-                </div>
-              ) : (
-                <div className="h-full min-h-[220px] overflow-y-auto whitespace-pre-wrap p-4 font-mono text-sm leading-6 text-foreground/78">
-                  {activeVaultText || "This vault note is empty."}
-                </div>
-              )
-            ) : (
-              <div className="flex min-h-[220px] items-center justify-center px-4 text-center font-mono text-sm text-foreground/60">
-                Vault folders and non-markdown links can stay in the run as source references even
-                when there is no inline preview.
-              </div>
-            )
-          ) : (
-            <div className="flex min-h-[220px] items-center justify-center font-mono text-sm text-foreground/60">
-              No active document selected.
-            </div>
-          )}
+        <div className="mt-3">
+          <DocumentPaneWorkspace
+            layout={paneLayout}
+            activePaneId={activePaneId}
+            documentTabs={workspaceDocumentTabs}
+            materials={materials}
+            paneZoomLevels={paneZoomLevels}
+            canSplitFurther={canSplitFurther}
+            onFocusPane={handleFocusPane}
+            onSplitPane={handleSplitPane}
+            onClosePane={handleClosePane}
+            onPaneZoomChange={handlePaneZoomChange}
+            onTextSelectionChange={({ text, label }) => {
+              setExcerptText(text);
+              setExcerptLabel(label);
+            }}
+          />
         </div>
       </div>
 

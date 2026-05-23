@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
 import { TutorErrorBoundary } from "@/components/TutorErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { SourceShelf } from "@/components/studio/SourceShelf";
@@ -14,6 +13,27 @@ import { StudioAnkiPanel } from "@/components/studio/StudioAnkiPanel";
 import { StudioObsidianPanel } from "@/components/studio/StudioObsidianPanel";
 import { StudioWorkspaceUnified } from "@/components/studio/StudioWorkspaceUnified";
 import { MemoryPanel } from "@/components/studio/MemoryPanel";
+import { TutorStageShell } from "@/components/tutor-stage/TutorStageShell";
+import { TutorStageRead } from "@/components/tutor-stage/TutorStageRead";
+import { TutorStageSettings } from "@/components/tutor-stage/TutorStageSettings";
+import type { TutorStageTab } from "@/components/tutor-stage/tutorStageTabs";
+import {
+  defaultBoardLayoutModeForTab,
+  type BoardLayoutMode,
+} from "@/lib/boardLayoutState";
+import {
+  isTutorStageShellEnabled,
+  tutorStageTabForLiveSession,
+  tutorStageTabForPreset,
+} from "@/lib/tutorStageShell";
+import {
+  mergeTutorStageViewerState,
+  readTutorStageViewerState,
+} from "@/lib/tutorStageViewerState";
+import {
+  StudioEntryMaterialsSection,
+  type StudioEntryUploadProgress,
+} from "@/components/studio/StudioEntryMaterialsSection";
 import { TutorLiveStudyPane } from "@/components/tutor-shell/TutorLiveStudyPane";
 import { TutorScholarStrategyPanel } from "@/components/tutor-shell/TutorScholarStrategyPanel";
 import {
@@ -45,7 +65,7 @@ import { resolveResumableTutorHubCandidate } from "@/lib/tutorResumeCandidate";
 import { buildStudioMemoryStatus } from "@/lib/studioMemoryStatus";
 import type { ChatMessage } from "@/components/TutorChat.types";
 import { api } from "@/lib/api";
-import type { TutorMemoryCapsule, TutorTemplateChain } from "@/lib/api";
+import type { Material, TutorMemoryCapsule, TutorTemplateChain } from "@/lib/api";
 import type { TutorHubResumeCandidate } from "@/lib/api";
 import type { UseTutorHubReturn } from "@/hooks/useTutorHub";
 import type { UseTutorSessionReturn } from "@/hooks/useTutorSession";
@@ -181,8 +201,6 @@ function formatEntryMaterialLabel(
   }
   return basename;
 }
-
-const ENTRY_CARD_UPLOAD_ACCEPT = ".pdf,.docx,.mp4,.pptx";
 
 export interface TutorShellProps {
   activeSessionId: string | null;
@@ -479,6 +497,34 @@ export function TutorShell({
     requestKey: number;
   } | null>(null);
   const workspaceTabRequestCounterRef = useRef<number>(3_000_000);
+  const stageShellEnabled = useMemo(
+    () => isTutorStageShellEnabled(viewerState),
+    [viewerState],
+  );
+  const [stageTab, setStageTab] = useState<TutorStageTab>(() => {
+    const parsed = readTutorStageViewerState(viewerState);
+    return parsed.active_tab ?? "read";
+  });
+  const [stageBoardLayoutMode, setStageBoardLayoutMode] = useState<BoardLayoutMode>(
+    () => {
+      const parsed = readTutorStageViewerState(viewerState);
+      const tab = parsed.active_tab ?? "read";
+      return parsed.board_layout_mode ?? defaultBoardLayoutModeForTab(tab);
+    },
+  );
+
+  const persistStageShellViewerState = useCallback(
+    (nextTab: TutorStageTab, nextBoardMode: BoardLayoutMode) => {
+      setViewerState(
+        mergeTutorStageViewerState(viewerState, {
+          stage_shell_v1: true,
+          active_tab: nextTab,
+          board_layout_mode: nextBoardMode,
+        }),
+      );
+    },
+    [setViewerState, viewerState],
+  );
   const [localDocumentTabs, setLocalDocumentTabs] = useState<StudioDocumentTab[]>(
     controlledDocumentTabs ?? [],
   );
@@ -508,7 +554,8 @@ export function TutorShell({
   );
   const [notesScratchpad, setNotesScratchpad] = useState("");
   const [sourceShelfUploading, setSourceShelfUploading] = useState(false);
-  const entryUploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [sourceShelfUploadProgress, setSourceShelfUploadProgress] =
+    useState<StudioEntryUploadProgress | null>(null);
   const lastPolishDraftWorkflowIdRef = useRef<string | null>(null);
   const hasAppliedInitialWorkspaceResetRef = useRef(false);
   const promotedPrimePacketObjects = useMemo(() => {
@@ -785,6 +832,7 @@ export function TutorShell({
           file_type: workspaceObject.badge,
           source_title: workspaceObject.title,
           source_kind: "vault",
+          material_id: undefined,
         });
         return;
       }
@@ -815,6 +863,8 @@ export function TutorShell({
         material_id: materialId,
         source_path: workspaceObject.detail || null,
         file_type: workspaceObject.badge || null,
+        source_title: workspaceObject.title,
+        source_kind: "material",
       });
     },
     [setActiveDocumentTabId, setDocumentTabs, setViewerState],
@@ -834,6 +884,7 @@ export function TutorShell({
           source_path: nextTab.sourcePath ?? material?.source_path ?? null,
           file_type: material?.file_type ?? null,
           source_title: nextTab.title,
+          source_kind: "material",
         });
         return;
       }
@@ -854,6 +905,62 @@ export function TutorShell({
       setViewerState,
     ],
   );
+  const applyDocumentTabViewerState = useCallback(
+    (tab: StudioDocumentTab | null) => {
+      if (!tab) {
+        setViewerState(null);
+        return;
+      }
+
+      if (tab.kind === "material" && typeof tab.sourceId === "number") {
+        const material = hub.chatMaterials.find(
+          (candidate) => candidate.id === tab.sourceId,
+        );
+        setViewerState({
+          material_id: tab.sourceId,
+          source_path: tab.sourcePath ?? material?.source_path ?? null,
+          file_type: material?.file_type ?? null,
+          source_title: tab.title,
+          source_kind: "material",
+        });
+        return;
+      }
+
+      if (tab.kind === "vault") {
+        setViewerState({
+          source_path: tab.sourcePath ?? null,
+          file_type: tab.kind,
+          source_title: tab.title,
+          source_kind: "vault",
+        });
+      }
+    },
+    [hub.chatMaterials, setViewerState],
+  );
+  const handleCloseDocumentTab = useCallback(
+    (tabId: string) => {
+      setDocumentTabs((current) => {
+        const closedIndex = current.findIndex((tab) => tab.id === tabId);
+        const nextTabs = current.filter((tab) => tab.id !== tabId);
+
+        if (activeDocumentTabId === tabId) {
+          const fallbackTab =
+            nextTabs[Math.min(closedIndex, Math.max(nextTabs.length - 1, 0))] ??
+            null;
+          setActiveDocumentTabId(fallbackTab?.id ?? null);
+          applyDocumentTabViewerState(fallbackTab);
+        }
+
+        return nextTabs;
+      });
+    },
+    [
+      activeDocumentTabId,
+      applyDocumentTabViewerState,
+      setActiveDocumentTabId,
+      setDocumentTabs,
+    ],
+  );
   const handleClipExcerpt = useCallback(
     (workspaceObject: StudioWorkspaceObject) => {
       setWorkspaceDraftObjects((prev) =>
@@ -861,10 +968,21 @@ export function TutorShell({
           ? prev
           : [...prev, workspaceObject],
       );
-      // Make sure the user actually sees the clip land. Spawn the Workspace
-      // panel if it isn't open yet, and switch its inner tab to the tldraw
-      // Canvas (where clipped objects render). Without this, clips disappeared
-      // into a closed panel or a non-Canvas tab.
+      workspaceTabRequestCounterRef.current += 1;
+      setWorkspaceTabRequest({
+        tab: "canvas",
+        requestKey: workspaceTabRequestCounterRef.current,
+      });
+
+      if (stageShellEnabled) {
+        setStageBoardLayoutMode((current) =>
+          current === "collapsed" ? "split" : current,
+        );
+        setStageTab("read");
+        return;
+      }
+
+      // Legacy floating studio: spawn workspace panel if closed.
       setPanelLayout((current) => {
         if (current.some((item) => item.panel === "workspace")) {
           return current;
@@ -886,13 +1004,8 @@ export function TutorShell({
           },
         ];
       });
-      workspaceTabRequestCounterRef.current += 1;
-      setWorkspaceTabRequest({
-        tab: "canvas",
-        requestKey: workspaceTabRequestCounterRef.current,
-      });
     },
-    [setPanelLayout],
+    [setPanelLayout, stageShellEnabled],
   );
 
   // Hydrate workspaceDraftObjects from localStorage when courseId resolves.
@@ -1054,6 +1167,41 @@ export function TutorShell({
     });
 
   const { submitBrainFeedback } = useBrainFeedback();
+  useEffect(() => {
+    if (!stageShellEnabled) {
+      return;
+    }
+    const parsed = readTutorStageViewerState(viewerState);
+    if (parsed.active_tab && parsed.active_tab !== stageTab) {
+      setStageTab(parsed.active_tab);
+    }
+    if (
+      parsed.board_layout_mode &&
+      parsed.board_layout_mode !== stageBoardLayoutMode
+    ) {
+      setStageBoardLayoutMode(parsed.board_layout_mode);
+    }
+  }, [
+    stageBoardLayoutMode,
+    stageShellEnabled,
+    stageTab,
+    viewerState,
+  ]);
+
+  useEffect(() => {
+    if (!stageShellEnabled || !session.hasActiveTutorSession) {
+      return;
+    }
+    const nextTab = tutorStageTabForLiveSession(true);
+    setStageTab(nextTab);
+    persistStageShellViewerState(nextTab, stageBoardLayoutMode);
+  }, [
+    persistStageShellViewerState,
+    session.hasActiveTutorSession,
+    stageBoardLayoutMode,
+    stageShellEnabled,
+  ]);
+
   const liveTutorSessionId = session.hasActiveTutorSession
     ? activeSessionId
     : null;
@@ -1135,9 +1283,15 @@ export function TutorShell({
   }, [tutorChainId, tutorCustomBlockIds.length]);
   const applyCanvasPreset = useCallback(
     (preset: "priming" | "study" | "polish" | "full_studio" | "minimal") => {
+      if (stageShellEnabled) {
+        const nextTab = tutorStageTabForPreset(preset);
+        setStageTab(nextTab);
+        setStageBoardLayoutMode(defaultBoardLayoutModeForTab(nextTab));
+        return;
+      }
       setPanelLayout(buildStudioShellPresetLayout(preset));
     },
-    [setPanelLayout],
+    [setPanelLayout, stageShellEnabled],
   );
   const availableCourses = useMemo(
     () =>
@@ -1253,21 +1407,11 @@ export function TutorShell({
         : [],
     [hub.chatMaterials, hub.courseId],
   );
-  const filteredCourseMaterials = useMemo(() => {
-    const q = entryMaterialFilter.trim().toLowerCase();
-    if (!q) return selectedCourseMaterials;
-    return selectedCourseMaterials.filter((material) => {
-      const label = formatEntryMaterialLabel(
-        material.title,
-        material.source_path,
-      ).toLowerCase();
-      return (
-        label.includes(q) ||
-        (material.source_path || "").toLowerCase().includes(q) ||
-        (material.title || "").toLowerCase().includes(q)
-      );
-    });
-  }, [selectedCourseMaterials, entryMaterialFilter]);
+  const formatEntryMaterialRowLabel = useCallback(
+    (material: Material) =>
+      formatEntryMaterialLabel(material.title, material.source_path),
+    [],
+  );
   const selectedCourseMaterialIds = useMemo(
     () => selectedCourseMaterials.map((material) => material.id),
     [selectedCourseMaterials],
@@ -1322,12 +1466,23 @@ export function TutorShell({
       }
 
       setSourceShelfUploading(true);
+      setSourceShelfUploadProgress({
+        completed: 0,
+        total: files.length,
+        currentName: files[0]?.name || "",
+      });
       const uploadedIds: number[] = [];
       let successes = 0;
       let failures = 0;
 
       try {
-        for (const file of files) {
+        for (let index = 0; index < files.length; index += 1) {
+          const file = files[index];
+          setSourceShelfUploadProgress({
+            completed: index,
+            total: files.length,
+            currentName: file.name,
+          });
           try {
             const result = await api.tutor.uploadMaterial(file, {
               ...(typeof hub.courseId === "number"
@@ -1345,6 +1500,11 @@ export function TutorShell({
             );
           }
         }
+        setSourceShelfUploadProgress({
+          completed: files.length,
+          total: files.length,
+          currentName: "",
+        });
 
         await hub.refreshChatMaterials?.();
         if (uploadedIds.length > 0) {
@@ -1363,24 +1523,10 @@ export function TutorShell({
         }
       } finally {
         setSourceShelfUploading(false);
+        setSourceShelfUploadProgress(null);
       }
     },
     [hub],
-  );
-
-  const handleEntryMaterialUploadChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      if (!event.target.files || event.target.files.length === 0) {
-        return;
-      }
-
-      try {
-        await handleUploadSourceShelfFiles(Array.from(event.target.files));
-      } finally {
-        event.target.value = "";
-      }
-    },
-    [handleUploadSourceShelfFiles],
   );
 
   const handleEntryCourseChange = useCallback(
@@ -1668,7 +1814,7 @@ export function TutorShell({
           onSendResultToWorkspace={handleSendPrimingResultToWorkspace}
           onOpenConceptMapInWorkspace={(mermaid) => {
             const trimmedMermaid = mermaid.trim();
-            if (!trimmedMermaid || !workspacePanelSeed) {
+            if (!trimmedMermaid) {
               return;
             }
 
@@ -1677,6 +1823,18 @@ export function TutorShell({
               mermaid: trimmedMermaid,
               requestKey: nextRequestKey,
             };
+
+            if (stageShellEnabled) {
+              setStageTab("prime");
+              setStageBoardLayoutMode("split");
+              setConceptMapImportRequest(nextImportRequest);
+              return;
+            }
+
+            if (!workspacePanelSeed) {
+              return;
+            }
+
             const workspaceAlreadyOpen = panelLayout.some((item) => item.panel === "workspace");
 
             if (workspaceAlreadyOpen) {
@@ -1885,6 +2043,47 @@ export function TutorShell({
       draftCardRequestText={polishDraftPreview.cardRequestText}
     />
   );
+  const memoryPanel = (
+    <MemoryPanel
+      status={memoryStatus}
+      activeCapsuleId={runtimeState?.activeMemoryCapsuleId ?? null}
+      onActivateCapsule={setActiveMemoryCapsuleId}
+    />
+  );
+  const sourceShelfPanel = (
+    <SourceShelf
+      courseId={hub.courseId ?? null}
+      courseName={sourceShelfCourseName}
+      studyUnit={sourceShelfStudyUnit}
+      topic={sourceShelfTopic}
+      materials={hub.chatMaterials}
+      selectedMaterialIds={hub.selectedMaterials}
+      selectedMaterialCount={hub.selectedMaterials.length}
+      selectedPaths={hub.selectedPaths}
+      vaultFolder={sourceShelfVaultFolder}
+      courseOptions={availableCourses}
+      workspaceObjectIds={canvasObjectIds}
+      onSelectedMaterialIdsChange={hub.setSelectedMaterials}
+      onSelectedPathsChange={hub.setSelectedPaths}
+      onUploadFiles={handleUploadSourceShelfFiles}
+      isUploading={sourceShelfUploading}
+      onAddToWorkspace={handleAddWorkspaceObject}
+      onOpenInDocumentDock={handleOpenSourceInDocumentDock}
+    />
+  );
+  const documentDockPanel = (
+    <StudioDocumentDock
+      materials={hub.chatMaterials}
+      selectedMaterialIds={hub.selectedMaterials}
+      selectedPaths={hub.selectedPaths}
+      viewerState={viewerState}
+      documentTabs={documentTabs}
+      activeDocumentTabId={activeDocumentTabId}
+      onSelectDocumentTab={handleSelectDocumentTab}
+      onCloseDocumentTab={handleCloseDocumentTab}
+      onClipExcerpt={handleClipExcerpt}
+    />
+  );
   const runConfigContent = (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-1">
       <RunConfigPanel
@@ -2026,106 +2225,20 @@ export function TutorShell({
         </select>
       </label>
       {typeof hub.courseId === "number" ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]">
-              Session Materials
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleAllEntryMaterials}
-              className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)] transition hover:text-white"
-            >
-              {allEntryMaterialsSelected ? "Deselect All" : "Select All"}
-            </button>
-          </div>
-          <input
-            type="text"
-            value={entryMaterialFilter}
-            onChange={(event) => setEntryMaterialFilter(event.target.value)}
-            placeholder={`Filter ${selectedCourseMaterials.length} materials…`}
-            aria-label="Filter session materials"
-            className="w-full rounded-[var(--ds-r-080)] border border-[var(--ds-accent-a18)] bg-black/40 px-3 py-2 font-mono text-sm text-white outline-none placeholder:text-[#ffc8d3]/45 focus:border-[var(--ds-accent-a36)]"
-          />
-          <div className="max-h-[240px] overflow-y-auto rounded-[var(--ds-r-090)] border border-[var(--ds-accent-a18)] bg-black/30 p-2">
-            {filteredCourseMaterials.length > 0 ? (
-              <div className="space-y-2">
-                {filteredCourseMaterials.map((material) => {
-                  const checked = hub.selectedMaterials.includes(material.id);
-                  const entryMaterialLabel = formatEntryMaterialLabel(
-                    material.title,
-                    material.source_path,
-                  );
-                  return (
-                    <label
-                      key={material.id}
-                      title={entryMaterialLabel}
-                      className="flex cursor-pointer items-start gap-3 rounded-[var(--ds-r-080)] border border-transparent px-2 py-2 transition hover:border-[var(--ds-accent-a18)] hover:bg-black/20"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => handleToggleEntryMaterial(material.id)}
-                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[rgba(255,118,144,0.28)] bg-black/40 text-primary"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="break-words font-mono text-sm leading-snug text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
-                          {entryMaterialLabel}
-                        </div>
-                      </div>
-                      <span className="rounded-full border border-[var(--ds-accent-a22)] bg-black/30 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-1)]">
-                        {formatMaterialFileType(material.file_type)}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="font-mono text-xs leading-6 text-[#ffc8d3]/68">
-                {selectedCourseMaterials.length > 0
-                  ? `No materials match “${entryMaterialFilter.trim()}”.`
-                  : "No materials available for this course yet."}
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <button
-              type="button"
-              data-testid="studio-entry-upload-button"
-              onClick={() => entryUploadInputRef.current?.click()}
-              disabled={sourceShelfUploading}
-              className="w-full cursor-pointer rounded-lg border border-[rgba(255,118,144,0.25)] border-dashed p-3 text-center font-mono transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-70"
-            >
-              <Upload className="mx-auto h-4 w-4 text-[var(--ds-fg-pink-2)]" aria-hidden="true" />
-              <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white">
-                {sourceShelfUploading
-                  ? "Adding to Current Run..."
-                  : "Upload to Library + Current Run"}
-              </div>
-              <div className="mt-1 text-[11px] text-[#ffc8d3]/68">
-                PDF, DOCX, MP4, PPTX
-              </div>
-            </button>
-            <input
-              ref={entryUploadInputRef}
-              data-testid="studio-entry-upload-input"
-              aria-label="Upload to Library and Current Run"
-              type="file"
-              accept={ENTRY_CARD_UPLOAD_ACCEPT}
-              multiple
-              className="hidden"
-              onChange={handleEntryMaterialUploadChange}
-            />
-            {sourceShelfUploading ? (
-              <div
-                data-testid="studio-entry-upload-status"
-                className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ds-fg-pink-2)]"
-              >
-                Uploading to Library and Current Run...
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <StudioEntryMaterialsSection
+          materials={selectedCourseMaterials}
+          materialFilter={entryMaterialFilter}
+          onMaterialFilterChange={setEntryMaterialFilter}
+          selectedMaterialIds={hub.selectedMaterials}
+          onToggleMaterial={handleToggleEntryMaterial}
+          onToggleAll={handleToggleAllEntryMaterials}
+          allSelected={allEntryMaterialsSelected}
+          formatMaterialLabel={formatEntryMaterialRowLabel}
+          formatMaterialBadge={formatMaterialFileType}
+          uploading={sourceShelfUploading}
+          uploadProgress={sourceShelfUploadProgress}
+          onUploadFiles={handleUploadSourceShelfFiles}
+        />
       ) : null}
       <div
         data-testid="studio-entry-material-count"
@@ -2201,6 +2314,59 @@ export function TutorShell({
     </div>
   );
 
+  if (stageShellEnabled) {
+    return (
+      <TutorErrorBoundary fallbackLabel="Studio Canvas">
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {showSetup && !liveTutorSessionId ? (
+            <div
+              data-testid="tutor-stage-entry-overlay"
+              className="absolute inset-0 z-30 flex items-start justify-center overflow-y-auto bg-black/85 p-4 sm:p-6"
+            >
+              <div className="w-full max-w-4xl">{entryCard}</div>
+            </div>
+          ) : null}
+          <TutorStageShell
+            activeTab={stageTab}
+            onTabChange={(nextTab) => {
+              const nextBoardMode = defaultBoardLayoutModeForTab(nextTab);
+              setStageTab(nextTab);
+              setStageBoardLayoutMode(nextBoardMode);
+              persistStageShellViewerState(nextTab, nextBoardMode);
+            }}
+            boardLayoutMode={stageBoardLayoutMode}
+            onBoardLayoutModeChange={(nextBoardMode) => {
+              setStageBoardLayoutMode(nextBoardMode);
+              persistStageShellViewerState(stageTab, nextBoardMode);
+            }}
+            stages={{
+              sources: (
+                <div className="h-full min-h-0 overflow-y-auto">{sourceShelfPanel}</div>
+              ),
+              read: (
+                <TutorStageRead
+                  sourceShelf={sourceShelfPanel}
+                  documentDock={documentDockPanel}
+                />
+              ),
+              prime: primingStudioContent,
+              teach: tutorStudioContent,
+              polish: polishStudioContent,
+              settings: (
+                <TutorStageSettings
+                  runConfig={runConfigContent}
+                  memory={memoryPanel}
+                  notesPanel={notesPanel}
+                />
+              ),
+            }}
+            sessionBoard={workspaceStudioContent}
+          />
+        </div>
+      </TutorErrorBoundary>
+    );
+  }
+
   return (
     <TutorErrorBoundary fallbackLabel="Studio Canvas">
       <div className="flex min-h-0 flex-1 flex-col">
@@ -2209,51 +2375,14 @@ export function TutorShell({
           defaultPreset={liveTutorSessionId ? "study" : "priming"}
           autoSeedDefaultPreset={false}
           externalLayoutFocusRequestKey={startPrimingViewportFocusRequestKey}
-          sourceShelf={
-            <SourceShelf
-              courseId={hub.courseId ?? null}
-              courseName={sourceShelfCourseName}
-              studyUnit={sourceShelfStudyUnit}
-              topic={sourceShelfTopic}
-              materials={hub.chatMaterials}
-              selectedMaterialIds={hub.selectedMaterials}
-              selectedMaterialCount={hub.selectedMaterials.length}
-              selectedPaths={hub.selectedPaths}
-              vaultFolder={sourceShelfVaultFolder}
-              courseOptions={availableCourses}
-              workspaceObjectIds={canvasObjectIds}
-              onSelectedMaterialIdsChange={hub.setSelectedMaterials}
-              onSelectedPathsChange={hub.setSelectedPaths}
-              onUploadFiles={handleUploadSourceShelfFiles}
-              isUploading={sourceShelfUploading}
-              onAddToWorkspace={handleAddWorkspaceObject}
-              onOpenInDocumentDock={handleOpenSourceInDocumentDock}
-            />
-          }
-          documentDock={
-            <StudioDocumentDock
-              materials={hub.chatMaterials}
-              selectedMaterialIds={hub.selectedMaterials}
-              selectedPaths={hub.selectedPaths}
-              viewerState={viewerState}
-              documentTabs={documentTabs}
-              activeDocumentTabId={activeDocumentTabId}
-              onSelectDocumentTab={handleSelectDocumentTab}
-              onClipExcerpt={handleClipExcerpt}
-            />
-          }
+          sourceShelf={sourceShelfPanel}
+          documentDock={documentDockPanel}
           workspace={workspaceStudioContent}
           primingPanel={primingStudioContent}
           tutorPanel={tutorStudioContent}
           polishPanel={polishStudioContent}
           runConfig={runConfigContent}
-          memory={
-            <MemoryPanel
-              status={memoryStatus}
-              activeCapsuleId={runtimeState?.activeMemoryCapsuleId ?? null}
-              onActivateCapsule={setActiveMemoryCapsuleId}
-            />
-          }
+          memory={memoryPanel}
           notesPanel={notesPanel}
           obsidianPanel={obsidianPanel}
           ankiPanel={ankiPanel}

@@ -258,10 +258,6 @@ function collectLeafNodes(node: SourceTreeNode): SourceLeafNode[] {
   return node.children.flatMap((child) => collectLeafNodes(child));
 }
 
-function nodeHasCheckedDescendant(node: SourceTreeNode): boolean {
-  return collectLeafNodes(node).some((leaf) => leaf.checked);
-}
-
 function leafMatchesFilter(
   leaf: SourceLeafNode,
   filter: SourceShelfFilter,
@@ -347,19 +343,24 @@ function sortTreeNodes(nodes: SourceTreeNode[]): SourceTreeNode[] {
     });
 }
 
-function collectDefaultExpandedNodeIds(
-  nodes: SourceTreeNode[],
-  depth = 0,
-): string[] {
+function collectFolderNodeIds(nodes: SourceTreeNode[]): string[] {
   return nodes.flatMap((node) => {
     if (node.kind === "leaf") {
       return [];
     }
 
-    const shouldExpand = depth < 3 || nodeHasCheckedDescendant(node);
-    const next = collectDefaultExpandedNodeIds(node.children, depth + 1);
-    return shouldExpand ? [node.id, ...next] : next;
+    return [node.id, ...collectFolderNodeIds(node.children)];
   });
+}
+
+function filterSourceTree(
+  nodes: SourceTreeNode[],
+  filter: SourceShelfFilter,
+  query: string,
+): SourceTreeNode[] {
+  return nodes
+    .map((node) => filterTreeNode(node, filter, query))
+    .filter((node): node is SourceTreeNode => node !== null);
 }
 
 function buildCourseLookup(
@@ -653,6 +654,7 @@ function SourceShelfTreeNode({
   onAddToWorkspace,
   onOpenInDocumentDock,
   searchActive,
+  autoExpandFolders,
 }: {
   node: SourceTreeNode;
   depth: number;
@@ -668,6 +670,7 @@ function SourceShelfTreeNode({
     object: Extract<StudioWorkspaceObject, { kind: "material" | "vault_path" }>,
   ) => void;
   searchActive: boolean;
+  autoExpandFolders: boolean;
 }) {
   if (node.kind === "leaf") {
     const isInWorkspace = workspaceObjectIds.includes(node.workspaceObject.id);
@@ -757,7 +760,8 @@ function SourceShelfTreeNode({
   const checkedLeafCount = leafNodes.filter((leaf) => leaf.checked).length;
   const allChecked = leafNodes.length > 0 && checkedLeafCount === leafNodes.length;
   const partiallyChecked = checkedLeafCount > 0 && checkedLeafCount < leafNodes.length;
-  const isExpanded = searchActive || expandedNodeIds.has(node.id);
+  const isExpanded =
+    searchActive || autoExpandFolders || expandedNodeIds.has(node.id);
 
   return (
     <div className="space-y-1" style={{ marginLeft: `${depth * 10}px` }}>
@@ -809,6 +813,7 @@ function SourceShelfTreeNode({
               onAddToWorkspace={onAddToWorkspace}
               onOpenInDocumentDock={onOpenInDocumentDock}
               searchActive={searchActive}
+              autoExpandFolders={autoExpandFolders}
             />
           ))}
         </div>
@@ -970,18 +975,28 @@ export function SourceShelf({
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const visibleTree = useMemo(
-    () =>
-      fullTree
-        .map((node) => filterTreeNode(node, activeFilter, normalizedSearch))
-        .filter((node): node is SourceTreeNode => node !== null),
+    () => filterSourceTree(fullTree, activeFilter, normalizedSearch),
     [activeFilter, fullTree, normalizedSearch],
   );
+
+  const currentRunFilterActive =
+    activeFilter === "current_run" && !normalizedSearch;
 
   const runMaterialCount = selectedMaterialIds.length || selectedMaterialCount;
   const runVaultCount = uniqueVaultPaths(selectedPaths).length;
 
+  const applySourceFilter = (filterId: SourceShelfFilter) => {
+    setActiveFilter(filterId);
+    if (filterId !== "current_run") {
+      return;
+    }
+
+    const filteredTree = filterSourceTree(fullTree, "current_run", normalizedSearch);
+    setExpandedNodeIds(new Set(collectFolderNodeIds(filteredTree)));
+  };
+
   const toggleExpandedNode = (nodeId: string) => {
-    if (normalizedSearch) {
+    if (normalizedSearch || currentRunFilterActive) {
       return;
     }
     setExpandedNodeIds((current) => {
@@ -1154,7 +1169,7 @@ export function SourceShelf({
                 key={filterId}
                 type="button"
                 variant="outline"
-                onClick={() => setActiveFilter(filterId)}
+                onClick={() => applySourceFilter(filterId)}
                 aria-pressed={isActive}
                 className={
                   isActive
@@ -1324,6 +1339,7 @@ export function SourceShelf({
                   onAddToWorkspace={onAddToWorkspace}
                   onOpenInDocumentDock={onOpenInDocumentDock}
                   searchActive={Boolean(normalizedSearch)}
+                  autoExpandFolders={currentRunFilterActive}
                 />
               ))}
             </div>

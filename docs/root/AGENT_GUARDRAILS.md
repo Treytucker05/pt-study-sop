@@ -150,6 +150,37 @@ When the Tutor tablist uses `overflow-x-auto`, the browser computes `overflow-y:
 - `mmr_fetch_k = min(max(candidate_k * 3, candidate_k + 40), 1600)` in `brain/tutor_rag.py`
 - Avoid aggressive candidate-pool cuts that reduce source breadth or confidence
 
+### Tutor Material Viewer — PT School Paths Blocked (2026-05-20)
+
+**Problem:** Studio Document Dock / Material Viewer showed headers and paths but PDFs were blank; `/api/tutor/materials/<id>/file` returned **403** for synced PT School files.  
+**Cause:** `get_material_file()` only allowed `UPLOADS_DIR` and extracted-image roots. Synced materials store absolute OneDrive paths under `STUDY_RAG_DIR` / `PT_STUDY_RAG_DIR`, which were not in the allow-list. A stale Flask process on port `5127` could also mask the fix until restart.  
+**Fix shipped:** `brain/dashboard/api_tutor_materials.py` — `_configured_material_sync_roots()` includes `config.STUDY_RAG_DIR` and env aliases; `_resolve_serveable_material_path()` strips `#chNN` fragments before disk lookup.  
+**Verify:** `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5127/api/tutor/materials/<id>/file` → `200` for a known on-disk PDF. Restart dashboard + hard refresh after backend changes.
+
+### Tutor Material Viewer — Chapter-Split Rows (2026-05-20)
+
+**Problem:** Textbook chapter rows (`path.pdf#ch01`) tried to load a non-existent file in a PDF iframe.  
+**Cause:** Chapter-split ingest uses logical `source_path` keys; content lives in `rag_docs.content`, not as separate PDF files.  
+**Fix shipped:** `dashboard_rebuild/client/src/lib/materialViewer.ts` + `MaterialViewer.tsx` — detect `#chNN`, show extracted-text fallback; full PDFs still use inline iframe when the parent file exists.  
+**Code follow-up (not done):** optional per-chapter PDF export or page-range viewer instead of whole-book iframe for `#ch` rows.
+
+### Library Materials Stale After Folder/File Renames (2026-05-20)
+
+**Problem:** Some materials open in the viewer, others 404 — often after renaming PT School folders or filenames.  
+**Cause:** `rag_docs.source_path` is the identity key. Renames on disk do not update existing rows; ~half of local rows can point at missing paths until reconciled. Uploads under `brain/data/uploads/` are independent copies.  
+**Operational fix:** Tutor Source Shelf → **Sync Root Folder** (full sync, not selected-files-only). Prunes missing paths and ingests new ones. Re-select materials on active sessions if material IDs changed.  
+**Code follow-up (not done):**
+
+- Material health indicator in Library / Source Shelf (on-disk exists? servable? content chars?)
+- “Reconcile paths” or post-rename wizard tied to sync preview
+- Surface 404/403 from `/file` in the viewer UI instead of a blank iframe
+- Auto-expand filtered groups in Session Materials when search is active
+
+### Session Materials Entry Card — Grouping UX (2026-05-20)
+
+**Shipped (frontend):** Entry overlay groups by **Textbook** vs **folder path** (not file type); collapsible sections; Collapse/Expand All separate from Select All.  
+**Files:** `studioEntryMaterials.ts`, `StudioEntryMaterialsSection.tsx`. Rebuild required (`npm run build`); macOS dashboard on port `5127`.
+
 ## Troubleshooting Snippets
 
 Run these in browser console (F12):
