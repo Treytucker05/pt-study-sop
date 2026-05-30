@@ -5,7 +5,7 @@ subcategory: structural-extraction
 description: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective.
 control_stage: PRIME
 status: validated
-version: '1.3'
+version: '1.4'
 created: '2026-04-07'
 updated: '2026-05-30'
 tags:
@@ -48,16 +48,21 @@ outputs:
 - name: PriorityNodes
   description: Highest-priority nodes for the next study pass based on objective relevance and uncertainty.
   format: bulleted or tabular list
+- name: FullTopicMap
+  description: Expanded objective-organized teaching roadmap covering all high-yield branches plus supporting examples, with each node labeled core or example. The compact spine orients; this map is what teaching walks one branch at a time.
+  format: ascii top-down tree
 artifact_schemas:
   StructuralSpine: ordered_steps
   Objective linkage map: tree_map
   UnknownNodeList: bullet_list
   PriorityNodes: bullet_list
+  FullTopicMap: tree_map
 produces:
 - StructuralSpine
 - Objective linkage map
 - UnknownNodeList
 - PriorityNodes
+- FullTopicMap
 requires:
 - artifact: FinalLearningObjectives
   optional: true
@@ -133,6 +138,7 @@ allowed_moves:
 - Organize structure using configured output_format (ascii_tree default)
 - Convert objective context into an explicit filter before keeping nodes
 - Classify each item by source role (core target vs supporting example/demo vs instructor de-emphasis) and attach examples to the node they illustrate rather than making them their own node
+- Produce a FullTopicMap that expands the topic into all high-yield branches plus supporting examples under the stated objectives, labeling each node core or example
 forbidden_moves:
 - Score, grade, or run retrieval checks on the learner
 - Teach detailed content or provide in-depth explanations
@@ -234,6 +240,7 @@ facilitation_prompt: |
   Produce: StructuralSpine, Objective linkage map, UnknownNodeList, and PriorityNodes.
   Resolve the active objective scope, extract a compact high-signal structural spine, link every retained node to at least one objective, and mark unknown nodes for later study. Keep it orientation-only, non-assessive, and objective-linked; do not turn the output into prose explanation or retain nodes that do not matter for the active objectives.
   Apply a Source-Role Gate: do not promote a supporting example, demonstration, textbook-only detail, or instructor-de-emphasized item into UnknownNodeList or PriorityNodes; attach it as a supporting example of the node it illustrates instead.
+  After the compact spine, also produce a FullTopicMap: an expanded objective-organized roadmap covering all high-yield branches plus supporting examples, with each node labeled core or example, examples nested under the node they illustrate, textbook support only where it clarifies a stated objective, and no new objectives from supplemental sources.
   Preset behavior:
   - exam_cram: one-shot; 5-node spine, short objective tags, and terse unknown-node list.
   - deep_mastery: interactive; labeled sections for scope resolution, spine, linkage map, unknown nodes, and priorities.
