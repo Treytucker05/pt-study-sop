@@ -1,0 +1,155 @@
+id: M-PRE-015
+name: Detailed Clinical Structural Map
+category: PRIME
+subcategory: structural-extraction
+description: Build a comprehensive, objective-organized, clinically-tagged top-down map of the whole topic before detail work. Open with a Main-frame anchor block, expand each objective into deep branches, and end every content section with a Clinical-meaning branch. Orientation-only, source-locked, objective-linked.
+control_stage: PRIME
+status: validated
+version: '1.0'
+created: '2026-05-30'
+updated: '2026-05-30'
+tags:
+- prime
+- structure
+- orientation
+- schema-priming
+- structural-extraction
+- clinical-map
+- detailed-overview
+- objectives
+purpose: >-
+  M-PRE-015 produces the deep study-map version of structural extraction. Where M-PRE-008 returns a
+  compact high-signal spine, M-PRE-015 returns a comprehensive objective-organized tree a learner can
+  study from: a Main-frame anchor block at the top, full branch coverage per objective, and an explicit
+  Clinical-meaning branch on every content section so the structure carries "so what for the patient,"
+  not just labels.
+not_for: Not for a quick spine or fast orientation pass (use M-PRE-008), and not for teaching, scored assessment, or full solution reveal (use a TEACH method).
+best_fit_topics:
+- Dense clinical modules where the learner wants one comprehensive map to study from
+- Material with clear objectives and clinical relevance (movement, pathology, intervention)
+- First-exposure topics where a full objective-organized overview beats a terse spine
+poor_fit_topics:
+- Quick refresh or exam-cram passes that only need a few anchors (use M-PRE-008)
+- Brand-new content with no objective frame or source packet
+- Scored retrieval or diagnostic testing
+learner_state_required: Source material is loaded, the topic is bounded, and objectives (instructor or M-PRE-010) are available to organize the map.
+inputs:
+- description: Source material loaded in chat
+  required: true
+- description: Learning objectives (instructor objectives or M-PRE-010 output)
+  required: true
+- description: Prior notes or prior-session context
+  required: false
+outputs:
+- name: DetailedClinicalMap
+  description: Comprehensive top-down ASCII tree. Section 0 is the Main frame (4-6 big-picture anchor statements); sections 1..N are objective-organized branches; each content section ends with a Clinical meaning branch.
+  format: ascii_tree
+- name: Objective linkage map
+  description: Map of each top-level section to the objective(s) it serves.
+  format: structured map or nested bullets
+- name: UnknownNodeList
+  description: Orientation gaps or low-confidence nodes, not scores.
+  format: bulleted list
+- name: PriorityNodes
+  description: Highest-yield sections/branches to study first.
+  format: bulleted list
+required_outputs:
+- DetailedClinicalMap (deep tree with a "0. Main frame" anchor block and a "Clinical meaning" branch on every content section)
+- Objective linkage map (each section linked to >=1 objective)
+- UnknownNodeList (orientation gaps, not scores)
+- PriorityNodes
+success_criteria:
+- All required outputs are present.
+- The map opens with a Main-frame anchor block and every content section ends with a Clinical-meaning branch.
+- Every top-level section links to at least one objective; supporting examples are nested under the node they illustrate, not promoted to their own objective.
+- The method stays orientation-only and non-assessive (no scoring, no quiz).
+steps:
+- step: 1
+  action: Resolve objective scope and the full objective set
+  notes: Use instructor objectives or M-PRE-010 output; module_all covers all active objectives.
+- step: 2
+  action: Write the Main frame
+  notes: 4-6 one-line big-picture anchors that capture the spine of the whole topic (section 0).
+- step: 3
+  action: Build the deep objective-organized tree
+  notes: One numbered section per objective (plus a final method/tool section if the source teaches one). Expand each to its meaningful sub-branches and clinical detail. No tight node cap; cover the full supported structure. Exclude only true trivia.
+- step: 4
+  action: Add a Clinical meaning branch to every content section
+  notes: 2-4 lines stating what the section means for assessment or patient care.
+- step: 5
+  action: Link sections to objectives, then mark unknowns and priorities
+  notes: Attach supporting examples under the node they illustrate; mark gaps as orientation cues, not scores.
+constraints:
+- rule: Do not assess, grade, or confidence-rate the learner
+  why: PRIME methods organize knowledge instead of testing it.
+- rule: Stay at orientation level; no full teaching or solution reveal
+  why: The goal is a study map, not the lesson.
+- rule: Require objectives before running
+  why: The map is organized by objective; without them it drifts.
+- rule: Every content section must end with a Clinical meaning branch
+  why: This is the point of the clinical map - structure plus "so what."
+- rule: Source-Role Gate
+  why: A supporting example, demonstration, analogy, or instructor-de-emphasized item is nested under the node it illustrates, never promoted to its own objective or to UnknownNodeList/PriorityNodes (e.g. shoulder abduction is an example under the task-analysis node).
+- rule: Source-locked
+  why: Build only from the loaded source; do not import outside facts into the map.
+allowed_moves:
+- Write a Main-frame anchor block (4-6 big-picture statements) as section 0
+- Build a comprehensive objective-organized top-down tree (multiple levels)
+- Add a Clinical meaning branch to every content section
+- Link every section to at least one objective
+- Nest supporting examples under the node they illustrate
+- Mark unknown or low-confidence nodes as orientation cues
+- Mark priority sections for the next study pass
+forbidden_moves:
+- Score, grade, or run retrieval checks on the learner
+- Teach detailed content or reveal full solutions
+- Run without objective context
+- Import facts not supported by the loaded source
+- Promote a supporting example/demo/instructor-de-emphasis into its own objective or into UnknownNodeList/PriorityNodes (nest it under the node it illustrates instead)
+- Omit the Main frame or any section's Clinical meaning branch
+- Collapse the map into a terse spine (use M-PRE-008 for that)
+knobs:
+  priming_depth_mode: comprehensive
+  node_cap: none
+  output_format: ascii_tree
+  objective_link_required: true
+  require_main_frame: true
+  require_clinical_meaning: true
+default_duration_min: 10
+energy_cost: medium
+best_stage: first_exposure
+mechanisms:
+- schema_activation
+- chunking
+- scaffolding
+- organization
+- prior_knowledge_activation
+- selective_attention
+related_methods:
+- id: M-PRE-008
+  relationship: Sibling. Use M-PRE-008 for a compact high-signal spine; use M-PRE-015 for a comprehensive clinical study map.
+- id: M-PRE-010
+  relationship: Run first to produce the objectives that organize the map.
+- id: M-PRE-012
+  relationship: Pairs after the map to pre-train the key terminology.
+facilitation_prompt: |
+  You are running M-PRE-015 (Detailed Clinical Structural Map) in the PRIME stage.
+  Use only the loaded source. Require learning objectives first (instructor objectives or M-PRE-010).
+  Produce a comprehensive, objective-organized, clinically-tagged top-down map - not a compact spine.
+
+  Build it as an ASCII tree with these required parts:
+  - Section "0. Main frame": 4-6 one-line big-picture anchors that capture the spine of the whole topic.
+  - One numbered section per objective (and a final method/tool section if the source teaches one), each
+    expanded to its meaningful sub-branches and clinical detail across multiple levels (no tight node cap;
+    cover the full supported structure; exclude only true trivia).
+  - A "Clinical meaning" branch at the end of every content section (2-4 lines: what it means for
+    assessment or patient care).
+
+  Then add: an Objective linkage map (each section -> objective[s]), an UnknownNodeList (orientation gaps,
+  not scores), and PriorityNodes (study first).
+
+  Rules: orientation-only and non-assessive (no scoring or quizzing); source-locked (no outside facts);
+  objective-linked. Apply a Source-Role Gate - nest supporting examples/demos/instructor-de-emphasized
+  items under the node they illustrate; never promote them to their own objective. Do not collapse into a
+  terse spine; that is M-PRE-008's job.
+related_chains: []
