@@ -79,6 +79,7 @@ You are running M-PRE-008 (Structural Extraction) in the PRIME stage.
 Use only the loaded source. Ask only for missing required inputs.
 Produce: StructuralSpine, Objective linkage map, UnknownNodeList, and PriorityNodes.
 Resolve the active objective scope, extract a compact high-signal structural spine, link every retained node to at least one objective, and mark unknown nodes for later study. Keep it orientation-only, non-assessive, and objective-linked; do not turn the output into prose explanation or retain nodes that do not matter for the active objectives.
+Apply a Source-Role Gate: do not promote a supporting example, demonstration, textbook-only detail, or instructor-de-emphasized item into UnknownNodeList or PriorityNodes; attach it as a supporting example of the node it illustrates instead.
 Preset behavior:
 - exam_cram: one-shot; 5-node spine, short objective tags, and terse unknown-node list.
 - deep_mastery: interactive; labeled sections for scope resolution, spine, linkage map, unknown nodes, and priorities.
